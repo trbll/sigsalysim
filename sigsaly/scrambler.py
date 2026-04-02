@@ -31,16 +31,18 @@ How frequency inversion works:
   leaving only the frequency-inverted version.
 
   Crucially, the operation is its own inverse: applying it twice with the
-  same carrier frequency recovers the original signal. This means the
-  "decryption key" is identical to the "encryption key" — just the carrier
-  frequency. There is only one parameter to guess, and speech has such
-  distinctive spectral characteristics that finding it is trivial.
+  same carrier frequency recovers the original signal.
+
+  Note: this simplified demo uses a single carrier frequency as its only
+  parameter. The real wartime A-3 was more complex (multi-band shuffling),
+  but the fundamental vulnerability is the same: the statistical properties
+  of speech survive the transformation, making it crackable by analysis.
 
 Why this matters for security:
-  Frequency inversion is "security through obscurity." The algorithm is
-  simple, the key space is tiny (just one frequency value), and the
-  statistical properties of speech survive the transformation. This is the
-  textbook example of why obscurity != security.
+  Any scrambling system that preserves speech structure is vulnerable.
+  Whether single-carrier inversion or multi-band shuffling, if the
+  spectral fingerprint of speech survives, an analyst can recover it.
+  This is the textbook example of why obscurity != security.
 """
 
 import numpy as np
@@ -50,7 +52,7 @@ from scipy.signal import butter, sosfilt
 def frequency_inversion(signal, sr, carrier_freq=2000):
     """Invert the frequency spectrum around a carrier frequency.
 
-    This is the core operation of the A-3 scrambler. It flips the spectrum:
+    This simplified A-3-style operation flips the spectrum:
     a tone at (carrier - X) Hz becomes a tone at X Hz, and vice versa.
 
     For example, with carrier_freq=2000:
@@ -73,8 +75,8 @@ def frequency_inversion(signal, sr, carrier_freq=2000):
         signal:       Input audio (1D numpy array, mono)
         sr:           Sample rate in Hz
         carrier_freq: Frequency to invert around (Hz).
-                      The A-3 used values around 2000-3000 Hz.
-                      This single number is the entire "secret key."
+                      This simplified demo uses a single carrier as its
+                      only parameter (the real A-3 was multi-band).
 
     Returns:
         Frequency-inverted signal (same length as input)

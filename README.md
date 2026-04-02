@@ -146,7 +146,7 @@ python -m sigsaly.telephone input/sample_speech.wav output/noisy.wav 20      # p
 python -m sigsaly.telephone input/sample_speech.wav output/terrible.wav 10   # barely usable
 ```
 
-#### A-3 Frequency Inversion Scrambler
+#### Simplified A-3-Style Scrambler
 
 ```bash
 python -m sigsaly.scrambler <mode> <input.wav> <output.wav> [carrier_freq]
@@ -154,10 +154,10 @@ python -m sigsaly.scrambler <mode> <input.wav> <output.wav> [carrier_freq]
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `mode` | One of: **scramble** (apply A-3), **unscramble** (reverse with known carrier), **crack** (automated spectral analysis attack) | *(required)* |
+| `mode` | One of: **scramble** (apply frequency inversion), **unscramble** (reverse with known carrier), **crack** (automated spectral analysis attack) | *(required)* |
 | `input.wav` | Source audio file | *(required)* |
 | `output.wav` | Output audio file | *(required)* |
-| `carrier_freq` | Carrier frequency in Hz (the "secret key"). Only used in scramble/unscramble modes. The A-3 used values around 2000-3000 Hz. | `2000` |
+| `carrier_freq` | Carrier frequency in Hz for this simplified demo. The real A-3 was a multi-band system; this models the core vulnerability with single-carrier inversion. | `2000` |
 
 ```bash
 # Scramble with a specific carrier frequency

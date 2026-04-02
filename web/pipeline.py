@@ -564,8 +564,8 @@ def run_web_pipeline(input_wav_path, params=None):
                    'is independently random. Compare to A-3, where the relationship between '
                    'adjacent frequencies is preserved -- that\'s the pattern the Germans exploited.')
             + ' of the original -- '
-            f'the key has {key_n_values:,} independently random values where A-3 had just one '
-            'secret number. '
+            f'the key has {key_n_values:,} independently random values, compared to the '
+            'tiny structured key space of scrambling systems like A-3. '
             + _tip('Claude Shannon', 'The father of information theory. His 1949 paper '
                    '"Communication Theory of Secrecy Systems" laid the mathematical foundations '
                    'of cryptography. He proved that perfect secrecy requires a key at least as '

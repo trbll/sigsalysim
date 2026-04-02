@@ -307,11 +307,11 @@ class VocoderFrame:
       - band_max:    float, normalization factor (for dequantization)
       - pitch_hz:    float, raw pitch before quantization
 
-    Total: 12 values per frame, 50 frames per second = 600 values/sec.
-    Compare to raw audio at 22050 samples/sec — this is a 37:1 compression.
-
-    It is THESE values (band_levels and pitch_level) that get encrypted
-    with the one-time pad before transmission.
+    Each frame has 10 band levels + 1 pitch level + 1 voiced flag = 12 fields.
+    Of these, band_levels (10) and pitch_level (1) are the encrypted streams;
+    the voiced/unvoiced flag is carried separately in this implementation.
+    At 50 frames/sec, the vocoder produces 600 field values/sec vs raw audio
+    at 22050 samples/sec — roughly a 37:1 compression.
     """
     def __init__(self):
         self.band_levels = np.zeros(NUM_BANDS, dtype=int)  # 10 x [0-5]

@@ -51,7 +51,9 @@ Historical context:
   The name "pad" comes from pre-SIGSALY one-time pads: actual paper pads
   with random numbers, where each sheet was torn off and burned after use.
   SIGSALY's vinyl records served the same purpose, but at 50 frames/sec
-  across 12 channels — far faster than any human could use a paper pad.
+  across the vocoder's channels — far faster than any human could use
+  a paper pad. In this simulator, 10 band streams + 1 pitch stream are
+  encrypted; the voiced/unvoiced flag is carried separately.
 """
 
 import numpy as np
