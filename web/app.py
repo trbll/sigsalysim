@@ -31,6 +31,7 @@ from flask import Flask, render_template, request, send_from_directory, redirect
 import soundfile as sf
 
 from web.pipeline import run_web_pipeline, cleanup_old_sessions
+from web.pipeline_v3 import run_v3_pipeline, cleanup_v3_sessions
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB upload limit
@@ -51,6 +52,11 @@ DEFAULT_RESULTS_JSON = os.path.join(DEFAULT_OUTPUT_DIR, 'results.json')
 
 # Special session_id used for pre-computed defaults
 DEFAULT_SESSION_ID = '_default'
+
+# v3 pre-computed defaults
+V3_DEFAULT_DIR = os.path.join(PROJECT_ROOT, 'web', 'v3_default_output')
+V3_DEFAULT_MANIFEST = os.path.join(V3_DEFAULT_DIR, 'manifest.json')
+V3_DEFAULT_SESSION_ID = '_v3_default'
 
 
 def _normalize_theme(theme):
@@ -222,6 +228,48 @@ def serve_spectrogram(session_id, filename):
     if not os.path.isdir(session_dir):
         return 'Session not found', 404
     return send_from_directory(session_dir, filename, mimetype='image/png')
+
+
+# ============================================================================
+# v3 INTERACTIVE VISUALIZATION ROUTES
+# ============================================================================
+
+def _load_v3_defaults():
+    """Load pre-computed v3 manifest if available."""
+    if not os.path.exists(V3_DEFAULT_MANIFEST):
+        return None
+    try:
+        with open(V3_DEFAULT_MANIFEST, 'r') as f:
+            manifest = json.load(f)
+        manifest['session_id'] = V3_DEFAULT_SESSION_ID
+        return manifest
+    except Exception:
+        return None
+
+
+@app.route('/v3')
+def v3_interactive():
+    """Render the v3 interactive visualization."""
+    theme = request.args.get('theme', 'default')
+    if theme not in VALID_THEMES:
+        theme = 'default'
+
+    manifest = _load_v3_defaults()
+    return render_template('v3.html', manifest=manifest, theme=theme)
+
+
+@app.route('/api/v3/audio/<session_id>/<filename>')
+def serve_v3_audio(session_id, filename):
+    """Serve a v3 audio variant WAV file."""
+    if session_id == V3_DEFAULT_SESSION_ID:
+        if not os.path.isdir(V3_DEFAULT_DIR):
+            return 'v3 defaults not found — run scripts/precompute_v3.py', 404
+        return send_from_directory(V3_DEFAULT_DIR, filename, mimetype='audio/wav')
+
+    session_dir = os.path.join(tempfile.gettempdir(), f'sigsaly_v3_{session_id}')
+    if not os.path.isdir(session_dir):
+        return 'Session not found', 404
+    return send_from_directory(session_dir, filename, mimetype='audio/wav')
 
 
 if __name__ == '__main__':

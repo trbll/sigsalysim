@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIGSALY Simulator — Interactive</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='v3/v3.css') }}">
+</head>
+<body data-theme="{{ theme or 'default' }}">
+
+<div class="simulator">
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- HEADER                                                -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <header class="sim-header">
+        <h1>SIGSALY <span>Interactive Simulator</span></h1>
+        <div class="mode-toggle">
+            <button class="mode-btn active" data-mode="a3">A-3 Scrambler</button>
+            <button class="mode-btn" data-mode="sigsaly">SIGSALY System</button>
+        </div>
+        <p class="mode-hint" id="mode-hint">
+            The Allies' first attempt — frequency inversion. Can the Germans crack it?
+        </p>
+    </header>
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- WASHINGTON TERMINAL (SENDER)                          -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <section class="terminal terminal-sender" id="sender">
+        <div class="terminal-label">WASHINGTON, D.C. — Pentagon</div>
+        <div class="terminal-body">
+            <!-- Signal chain -->
+            <div class="signal-chain">
+                <div class="chain-stage" data-stage="input">
+                    <div class="stage-label">INPUT</div>
+                    <div class="stage-waveform" id="waveform-input"></div>
+                    <button class="headphone-jack" data-variant="original" title="Listen to original voice">
+                        <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" class="jack-fill"/></svg>
+                    </button>
+                </div>
+                <div class="chain-arrow">→</div>
+
+                <!-- A-3 path -->
+                <div class="chain-stage a3-only" data-stage="scramble">
+                    <div class="stage-label">SCRAMBLE</div>
+                    <div class="stage-waveform" id="waveform-scramble"></div>
+                    <button class="headphone-jack" data-variant="a3_scrambled" title="Listen to scrambled audio">
+                        <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" class="jack-fill"/></svg>
+                    </button>
+                </div>
+
+                <!-- SIGSALY path -->
+                <div class="chain-stage sigsaly-only" data-stage="vocoder">
+                    <div class="stage-label">VOCODER</div>
+                    <div class="stage-waveform" id="waveform-vocoder"></div>
+                    <button class="headphone-jack" data-variant="vocoded" title="Listen to vocoded audio">
+                        <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" class="jack-fill"/></svg>
+                    </button>
+                </div>
+                <div class="chain-arrow sigsaly-only">→</div>
+                <div class="chain-stage sigsaly-only" data-stage="encrypt">
+                    <div class="stage-label">ENCRYPT</div>
+                    <div class="stage-waveform" id="waveform-encrypt"></div>
+                    <button class="headphone-jack" data-variant="sigsaly_encrypted" title="Listen to encrypted audio">
+                        <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" class="jack-fill"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Vinyl record (SIGSALY only) -->
+            <div class="vinyl-container sigsaly-only" id="sender-vinyl">
+                <div class="vinyl-label">KEY RECORD</div>
+                <div class="vinyl-record" id="sender-record">
+                    <div class="vinyl-grooves"></div>
+                    <div class="vinyl-label-center">SIDE A</div>
+                </div>
+                <button class="headphone-jack vinyl-jack" data-variant="key_record" title="Listen to key record (random noise)">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" class="jack-fill"/></svg>
+                </button>
+            </div>
+        </div>
+        <div class="terminal-edge terminal-edge-bottom"></div>
+    </section>
+
+    <!-- Noise added here -->
+    <div class="noise-indicator">
+        <span>↓ telephone line noise added (SNR {{ manifest.params.snr_db if manifest else 28 }} dB) ↓</span>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- ATLANTIC OCEAN                                        -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <section class="ocean" id="ocean">
+        <div class="coastline coastline-us">
+            <span>U.S. COASTLINE</span>
+        </div>
+
+        <div class="ocean-body">
+            <div class="wave wave-1"></div>
+            <div class="wave wave-2"></div>
+            <div class="wave wave-3"></div>
+            <div class="cable"></div>
+            <div class="ocean-label">ATLANTIC OCEAN</div>
+
+            <!-- German listening post -->
+            <div class="german-post" id="german-post">
+                <div class="post-label">🎧 GERMAN LISTENING POST</div>
+                <button class="headphone-jack post-jack" id="german-jack"
+                        data-variant-a3="a3_on_wire" data-variant-sigsaly="sigsaly_on_wire"
+                        title="Tap the wire — what does the eavesdropper hear?">
+                    <svg viewBox="0 0 24 24" width="24" height="24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" class="jack-fill"/></svg>
+                </button>
+                <div class="cracking-workbench" id="cracking-workbench">
+                    <label>Crack carrier freq:
+                        <input type="range" id="crack-slider" min="500" max="5000" step="10" value="1000">
+                        <output id="crack-freq-display">1000</output> Hz
+                    </label>
+                    <div class="crack-status" id="crack-status">Drag slider to search for speech...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="coastline coastline-uk">
+            <span>U.K. COASTLINE</span>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- LONDON TERMINAL (RECEIVER)                            -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <section class="terminal terminal-receiver" id="receiver">
+        <div class="terminal-edge terminal-edge-top"></div>
+        <div class="terminal-label">LONDON — GSX Headquarters</div>
+        <div class="terminal-body">
+            <!-- Signal chain (reverse) -->
+            <div class="signal-chain">
+                <!-- A-3 path -->
+                <div class="chain-stage a3-only" data-stage="unscramble">
+                    <div class="stage-label">UNSCRAMBLE</div>
+                    <div class="stage-waveform" id="waveform-unscramble"></div>
+                    <button class="headphone-jack" data-variant="a3_unscrambled" title="Listen to unscrambled audio">
+                        <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" class="jack-fill"/></svg>
+                    </button>
+                </div>
+
+                <!-- SIGSALY path -->
+                <div class="chain-stage sigsaly-only" data-stage="decrypt">
+                    <div class="stage-label">DECRYPT</div>
+                    <div class="stage-waveform" id="waveform-decrypt"></div>
+                    <button class="headphone-jack" data-variant="sigsaly_decrypted_0" title="Listen to decrypted audio">
+                        <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" class="jack-fill"/></svg>
+                    </button>
+                </div>
+                <div class="chain-arrow">→</div>
+                <div class="chain-stage" data-stage="output">
+                    <div class="stage-label">OUTPUT</div>
+                    <div class="stage-waveform" id="waveform-output"></div>
+                    <button class="headphone-jack" data-variant="__output__" title="Listen to final output">
+                        <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" class="jack-fill"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Vinyl record (SIGSALY only) — draggable for desync -->
+            <div class="vinyl-container sigsaly-only" id="receiver-vinyl">
+                <div class="vinyl-label">KEY RECORD (copy)</div>
+                <div class="vinyl-record vinyl-draggable" id="receiver-record">
+                    <div class="vinyl-grooves"></div>
+                    <div class="vinyl-label-center">SIDE A</div>
+                </div>
+                <div class="desync-indicator">
+                    <span>Offset: <output id="desync-display">0</output> frames</span>
+                    <button class="desync-reset" id="desync-reset" title="Reset to perfect sync">↺ Reset</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════ -->
+    <!-- NOW PLAYING BAR                                       -->
+    <!-- ══════════════════════════════════════════════════════ -->
+    <div class="now-playing" id="now-playing">
+        <div class="np-info">
+            <span class="np-label" id="np-label">Click a headphone jack to listen</span>
+            <span class="np-time" id="np-time"></span>
+        </div>
+        <div class="np-controls">
+            <button class="np-btn" id="np-play-pause" disabled>▶</button>
+            <button class="np-btn" id="np-stop" disabled>■</button>
+        </div>
+        <div class="np-progress">
+            <div class="np-bar" id="np-bar"></div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Audio engine config (from server) -->
+<script>
+window.SIGSALY_V3 = {
+    sessionId: {{ manifest.session_id | tojson if manifest else 'null' }},
+    audioBaseUrl: {{ url_for('serve_v3_audio', session_id='__SID__', filename='__FILE__') | tojson }},
+    variants: {{ manifest.variants | tojson if manifest else '{}' }},
+    params: {{ manifest.params | tojson if manifest else '{}' }},
+};
+</script>
+<script src="{{ url_for('static', filename='v3/v3-audio.js') }}"></script>
+<script src="{{ url_for('static', filename='v3/v3-vinyl.js') }}"></script>
+<script src="{{ url_for('static', filename='v3/v3-cracking.js') }}"></script>
+<script src="{{ url_for('static', filename='v3/v3.js') }}"></script>
+
+</body>
+</html>

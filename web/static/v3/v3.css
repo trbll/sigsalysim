@@ -1,0 +1,607 @@
+/* ══════════════════════════════════════════════════════════
+   SIGSALY v3 — Interactive Visualization Styles
+   ══════════════════════════════════════════════════════════ */
+
+:root {
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --surface-light: #1c2a4a;
+    --terminal-bg: #2a2a3a;
+    --terminal-border: #4a4a5a;
+    --text: #e0e0e0;
+    --text-muted: #8888aa;
+    --accent: #4ecca3;
+    --accent-dim: #2a7a5a;
+    --danger: #e74c3c;
+    --warning: #f39c12;
+    --ocean: #0a3d62;
+    --ocean-light: #1b6ca8;
+    --wire: #c0a040;
+    --jack-inactive: #555;
+    --jack-active: #4ecca3;
+    --vinyl-dark: #1a1a1a;
+    --vinyl-groove: #2a2a2a;
+    --mono: 'SF Mono', 'Menlo', 'Consolas', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 100vh;
+}
+
+.simulator {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+/* ── Header ─────────────────────────────────────────── */
+
+.sim-header {
+    text-align: center;
+    padding: 1.5rem 0 1rem;
+}
+
+.sim-header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+}
+
+.sim-header h1 span {
+    color: var(--text);
+    font-weight: 400;
+}
+
+.mode-toggle {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    margin: 1rem auto 0.5rem;
+    background: var(--surface);
+    border-radius: 6px;
+    overflow: hidden;
+    width: fit-content;
+    border: 1px solid var(--terminal-border);
+}
+
+.mode-btn {
+    padding: 0.5rem 1.5rem;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.mode-btn.active {
+    background: var(--accent);
+    color: var(--bg);
+}
+
+.mode-btn:hover:not(.active) {
+    color: var(--text);
+    background: var(--surface-light);
+}
+
+.mode-hint {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    font-style: italic;
+}
+
+/* ── Terminals ──────────────────────────────────────── */
+
+.terminal {
+    background: var(--terminal-bg);
+    border: 2px solid var(--terminal-border);
+    border-radius: 8px;
+    overflow: visible;
+    position: relative;
+}
+
+.terminal-label {
+    text-align: center;
+    padding: 0.6rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    background: var(--surface);
+    border-bottom: 1px solid var(--terminal-border);
+}
+
+.terminal-receiver .terminal-label {
+    border-bottom: none;
+    border-top: 1px solid var(--terminal-border);
+    order: -1;
+}
+
+.terminal-body {
+    padding: 1.25rem;
+    display: flex;
+    gap: 1.25rem;
+    align-items: center;
+}
+
+.terminal-edge {
+    height: 4px;
+    background: var(--wire);
+    margin: 0 auto;
+    width: 3px;
+    position: relative;
+}
+
+.terminal-edge-bottom {
+    height: 20px;
+    width: 3px;
+    margin: 0 auto;
+    background: var(--wire);
+}
+
+.terminal-edge-top {
+    height: 20px;
+    width: 3px;
+    margin: 0 auto;
+    background: var(--wire);
+}
+
+/* ── Signal Chain ───────────────────────────────────── */
+
+.signal-chain {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.chain-stage {
+    background: var(--surface);
+    border: 1px solid var(--terminal-border);
+    border-radius: 6px;
+    padding: 0.6rem 0.8rem;
+    min-width: 100px;
+    text-align: center;
+    position: relative;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.chain-stage.playing {
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(78, 204, 163, 0.3);
+}
+
+.stage-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    margin-bottom: 0.3rem;
+}
+
+.stage-waveform {
+    height: 30px;
+    background: var(--vinyl-dark);
+    border-radius: 3px;
+    margin-bottom: 0.4rem;
+    overflow: hidden;
+}
+
+.chain-arrow {
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+/* ── Headphone Jacks ────────────────────────────────── */
+
+.headphone-jack {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--jack-inactive);
+    cursor: pointer;
+    padding: 0.2rem;
+    transition: color 0.15s, transform 0.1s;
+    border-radius: 50%;
+}
+
+.headphone-jack:hover {
+    color: var(--accent);
+    transform: scale(1.15);
+}
+
+.headphone-jack.active {
+    color: var(--jack-active);
+}
+
+.headphone-jack.active .jack-fill {
+    fill: var(--jack-active);
+}
+
+.jack-fill {
+    fill: none;
+    transition: fill 0.15s;
+}
+
+/* ── Vinyl Records ──────────────────────────────────── */
+
+.vinyl-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+}
+
+.vinyl-label {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+}
+
+.vinyl-record {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: var(--vinyl-dark);
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+.vinyl-grooves {
+    position: absolute;
+    inset: 5px;
+    border-radius: 50%;
+    background: repeating-radial-gradient(
+        circle at center,
+        var(--vinyl-dark) 0px,
+        var(--vinyl-dark) 2px,
+        var(--vinyl-groove) 2px,
+        var(--vinyl-groove) 3px
+    );
+}
+
+.vinyl-label-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--accent-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.45rem;
+    font-weight: 700;
+    color: var(--text);
+    font-family: var(--mono);
+    z-index: 1;
+}
+
+.vinyl-record.spinning {
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.vinyl-draggable {
+    cursor: grab;
+    user-select: none;
+}
+
+.vinyl-draggable:active {
+    cursor: grabbing;
+}
+
+.vinyl-jack {
+    margin-top: 0.3rem;
+}
+
+.desync-indicator {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.desync-reset {
+    background: var(--surface);
+    border: 1px solid var(--terminal-border);
+    color: var(--text-muted);
+    font-size: 0.65rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: var(--mono);
+}
+
+.desync-reset:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+/* ── Noise Indicator ────────────────────────────────── */
+
+.noise-indicator {
+    text-align: center;
+    padding: 0.4rem;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--warning);
+    letter-spacing: 0.03em;
+}
+
+/* ── Ocean ──────────────────────────────────────────── */
+
+.ocean {
+    position: relative;
+    margin: 0;
+}
+
+.coastline {
+    text-align: center;
+    padding: 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #7a9a5a;
+    background: linear-gradient(180deg, #2a3a2a 0%, var(--ocean) 100%);
+    position: relative;
+}
+
+.coastline-us {
+    background: linear-gradient(180deg, var(--terminal-bg) 0%, #1a3a3a 40%, var(--ocean) 100%);
+}
+
+.coastline-uk {
+    background: linear-gradient(180deg, var(--ocean) 0%, #1a3a3a 60%, var(--terminal-bg) 100%);
+}
+
+.ocean-body {
+    background: var(--ocean);
+    padding: 2rem 1rem;
+    position: relative;
+    overflow: hidden;
+    min-height: 180px;
+}
+
+.ocean-label {
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: rgba(255,255,255,0.15);
+    text-transform: uppercase;
+    position: absolute;
+    bottom: 0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* Waves */
+.wave {
+    position: absolute;
+    width: 200%;
+    height: 40px;
+    left: -50%;
+    background: repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        rgba(255,255,255,0.03) 50px,
+        transparent 100px
+    );
+    border-radius: 40%;
+    animation: wave-drift 8s ease-in-out infinite;
+}
+
+.wave-1 { top: 10%; animation-delay: 0s; opacity: 0.6; }
+.wave-2 { top: 40%; animation-delay: -2s; opacity: 0.4; }
+.wave-3 { top: 70%; animation-delay: -4s; opacity: 0.3; }
+
+@keyframes wave-drift {
+    0%, 100% { transform: translateX(-5%); }
+    50% { transform: translateX(5%); }
+}
+
+/* Cable */
+.cable {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--wire);
+    transform: translateX(-50%);
+    z-index: 1;
+}
+
+/* ── German Listening Post ──────────────────────────── */
+
+.german-post {
+    position: relative;
+    z-index: 2;
+    background: #3a2a2a;
+    border: 1px solid #6a4a4a;
+    border-radius: 6px;
+    padding: 0.75rem;
+    max-width: 320px;
+    margin: 0 auto;
+}
+
+.post-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--danger);
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+.post-jack {
+    display: block;
+    margin: 0 auto 0.5rem;
+}
+
+.cracking-workbench {
+    margin-top: 0.5rem;
+}
+
+.cracking-workbench label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+}
+
+.cracking-workbench input[type="range"] {
+    flex: 1;
+    min-width: 120px;
+    accent-color: var(--danger);
+}
+
+.cracking-workbench output {
+    font-weight: 700;
+    color: var(--text);
+    min-width: 3em;
+}
+
+.crack-status {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: 0.3rem;
+    font-style: italic;
+}
+
+/* ── Now Playing Bar ────────────────────────────────── */
+
+.now-playing {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border-top: 2px solid var(--accent-dim);
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    z-index: 100;
+}
+
+.np-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.np-label {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text);
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.np-time {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text-muted);
+}
+
+.np-controls {
+    display: flex;
+    gap: 0.3rem;
+}
+
+.np-btn {
+    background: var(--surface-light);
+    border: 1px solid var(--terminal-border);
+    color: var(--text);
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.np-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.np-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.np-progress {
+    flex: 2;
+    height: 4px;
+    background: var(--terminal-border);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.np-bar {
+    height: 100%;
+    background: var(--accent);
+    width: 0%;
+    transition: width 0.1s linear;
+}
+
+/* ── Mode visibility ────────────────────────────────── */
+
+body[data-mode="a3"] .sigsaly-only { display: none !important; }
+body[data-mode="sigsaly"] .a3-only { display: none !important; }
+
+/* Default to A-3 mode */
+body:not([data-mode]) .sigsaly-only { display: none !important; }
+
+/* ── Responsive ─────────────────────────────────────── */
+
+@media (max-width: 700px) {
+    .terminal-body { flex-direction: column; }
+    .signal-chain { flex-wrap: wrap; justify-content: center; }
+    .simulator { padding: 0.5rem; }
+}
+
+/* Bottom padding for now-playing bar */
+.simulator { padding-bottom: 4rem; }
