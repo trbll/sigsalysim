@@ -1,0 +1,263 @@
+{
+  "session_id": "b3012d5d627a",
+  "session_dir": null,
+  "source_info": {
+    "samples": 252288,
+    "sr": 44100,
+    "duration": 5.72,
+    "nyquist": 22050,
+    "name": "Built-in sample"
+  },
+  "params": {
+    "snr_db": 28,
+    "carrier_freq": 2000,
+    "desync_offsets": [
+      1,
+      5,
+      25
+    ],
+    "key_seed": 42
+  },
+  "stages": [
+    {
+      "id": 0,
+      "title": "The Problem: Open Lines",
+      "description": "During WWII, Allied leaders needed to coordinate across the Atlantic \u2014 but long-distance phone calls traveled over radio links and cables that anyone could tap. Here's the original voice, and what it sounded like after traveling through a 1940s phone line: bandlimited to 300\u20133400 Hz, degraded by tube amplifier distortion, and buried under noise (SNR = 28 dB). Distorted, but perfectly intelligible. An eavesdropper on the line hears everything.",
+      "outputs": [
+        {
+          "filename": "0a_original.wav",
+          "duration": 5.72,
+          "peak_db": -0.4,
+          "label": "Original (clean)",
+          "spectrogram": "0a_original.png"
+        },
+        {
+          "filename": "0b_original_telephone.wav",
+          "duration": 5.72,
+          "peak_db": -0.4,
+          "label": "Over the wire (SNR=28 dB)",
+          "spectrogram": "0b_original_telephone.png"
+        }
+      ],
+      "diagnostics": {
+        "correlation_telephone": -0.0982,
+        "text": "Signal correlation (original vs telephone): -0.0982\nSNR: 28 dB (noise power is 1/631th of signal)\nBandwidth: 300-3400 Hz (telephone standard)"
+      }
+    },
+    {
+      "id": 1,
+      "title": "First Attempt: A-3 Scrambler",
+      "description": "The Allies' first solution was the A-3 scrambler \u2014 flip the audio spectrum around a secret carrier frequency (2000 Hz) so low sounds become high and vice versa. Listen to the scrambled audio: it sounds like garbled alien noise. Surely no one could understand that? But the Germans could. By 1941, they were routinely cracking A-3 calls using spectral analysis. The \"secret\" was a single number (the carrier frequency), and speech has such distinctive spectral patterns that finding it was trivial. Listen to the cracked output \u2014 the speech is recovered. The A-3 was security through obscurity, and it had failed. The Allies needed something fundamentally different.",
+      "outputs": [
+        {
+          "filename": "1a_a3_scrambled.wav",
+          "duration": 5.72,
+          "peak_db": -0.4,
+          "label": "A-3 Scrambled",
+          "spectrogram": "1a_a3_scrambled.png"
+        },
+        {
+          "filename": "1b_a3_scrambled_telephone.wav",
+          "duration": 5.72,
+          "peak_db": -0.4,
+          "label": "A-3 Scrambled (wire)",
+          "spectrogram": "1b_a3_scrambled_telephone.png"
+        },
+        {
+          "filename": "1c_a3_cracked.wav",
+          "duration": 5.72,
+          "peak_db": -0.4,
+          "label": "A-3 CRACKED",
+          "spectrogram": "1c_a3_cracked.png"
+        },
+        {
+          "filename": "1d_a3_cracked_telephone.wav",
+          "duration": 5.72,
+          "peak_db": -0.4,
+          "label": "A-3 Cracked (wire)",
+          "spectrogram": "1d_a3_cracked_telephone.png"
+        }
+      ],
+      "diagnostics": {
+        "carrier_freq_actual": 2000,
+        "carrier_freq_found": 1541,
+        "correlation_scrambled": -0.0014,
+        "correlation_cracked": 0.0208,
+        "text": "Carrier frequency used: 2000 Hz\nCarrier found by cracker: 1541 Hz\nTop candidates: 1541 Hz, 1745 Hz, 1663 Hz, 1622 Hz, 1500 Hz\nCorrelation (original vs scrambled): -0.0014\nCorrelation (original vs cracked): 0.0208\n\nThe cracker finds the carrier by trying different frequencies\nand scoring how \"speech-like\" each result sounds (low spectral\ncentroid + high variance = speech). One parameter to guess."
+      }
+    },
+    {
+      "id": 2,
+      "title": "The Key Insight: Digitize First",
+      "description": "The A-3 failed because it scrambled the analog waveform \u2014 the spectral shape of speech survived the transformation. SIGSALY's breakthrough was to first DIGITIZE the speech using a vocoder (\"voice coder\"). The vocoder splits audio into 10 frequency bands and measures the energy in each, 50 times per second. Each measurement is quantized to just 6 discrete levels (0\u20135). The result sounds robotic but is perfectly intelligible \u2014 and crucially, it's now a stream of small integers that can be encrypted with mathematics.",
+      "outputs": [
+        {
+          "filename": "2a_vocoder.wav",
+          "duration": 5.7,
+          "peak_db": -0.4,
+          "label": "Vocoder",
+          "spectrogram": "2a_vocoder.png"
+        },
+        {
+          "filename": "2b_vocoder_telephone.wav",
+          "duration": 5.7,
+          "peak_db": -0.4,
+          "label": "Vocoder (wire)",
+          "spectrogram": "2b_vocoder_telephone.png"
+        }
+      ],
+      "diagnostics": {
+        "n_frames": 285,
+        "n_voiced": 107,
+        "n_unvoiced": 178,
+        "compression_ratio": "74:1",
+        "correlation_vocoded": -0.0031,
+        "level_distribution": {
+          "0": 473,
+          "1": 542,
+          "2": 509,
+          "3": 500,
+          "4": 389,
+          "5": 437
+        },
+        "text": "Frames: 285 at 50 fps (5.70s)\nVoiced: 107/285 (38%), Unvoiced: 178/285 (62%)\nCompression: 876:1 (44100 samples/sec \u2192 600 values/sec)\nQuantization: 6 levels per band (10 bands)\nLevel distribution: L0=473, L1=542, L2=509, L3=500, L4=389, L5=437\nCorrelation (original vs vocoded): -0.0031\n\nThe robotic quality comes from coarse quantization (6 levels\nvs ~65,000 in 16-bit audio) and simplified excitation (pulse train\ninstead of real glottal waveform)."
+      }
+    },
+    {
+      "id": 3,
+      "title": "The Solution: One-Time Pad Encryption",
+      "description": "Now that speech is a stream of integers (0\u20135), SIGSALY encrypts each value by subtracting a random key value using modular arithmetic: encrypted = (voice \u2212 key) mod 6. The key comes from a vinyl record filled with random noise generated by mercury-vapor vacuum tubes. Identical copies were shipped by armed courier to each terminal. Listen to the encrypted output \u2014 it's pure noise. No trace of speech remains. Then listen to the decrypted output \u2014 with the correct key, the vocoded speech is perfectly recovered. The key record itself is also available: it's what the vinyl sounded like on a phonograph \u2014 random noise, which is exactly what makes the one-time pad unbreakable.",
+      "outputs": [
+        {
+          "filename": "3a_sigsaly_encrypted.wav",
+          "duration": 5.7,
+          "peak_db": -0.4,
+          "label": "Encrypted (eavesdropper hears)",
+          "spectrogram": "3a_sigsaly_encrypted.png"
+        },
+        {
+          "filename": "3b_sigsaly_encrypted_telephone.wav",
+          "duration": 5.7,
+          "peak_db": -0.4,
+          "label": "Encrypted (over the wire)",
+          "spectrogram": "3b_sigsaly_encrypted_telephone.png"
+        },
+        {
+          "filename": "3c_sigsaly_decrypted.wav",
+          "duration": 5.7,
+          "peak_db": -0.4,
+          "label": "Decrypted (correct key)",
+          "spectrogram": "3c_sigsaly_decrypted.png"
+        },
+        {
+          "filename": "3d_sigsaly_decrypted_telephone.wav",
+          "duration": 5.7,
+          "peak_db": -0.4,
+          "label": "Decrypted (over the wire)",
+          "spectrogram": "3d_sigsaly_decrypted_telephone.png"
+        },
+        {
+          "filename": "3e_key_record_audio.wav",
+          "duration": 10.72,
+          "peak_db": -0.4,
+          "label": "Key record (vinyl sound)",
+          "spectrogram": "3e_key_record_audio.png"
+        }
+      ],
+      "diagnostics": {
+        "correlation_encrypted": 0.0003,
+        "original_encrypted_correlation": 0.0066,
+        "roundtrip_bands": true,
+        "roundtrip_pitch": true,
+        "encrypted_distribution": {
+          "0": 478,
+          "1": 486,
+          "2": 468,
+          "3": 450,
+          "4": 469,
+          "5": 499
+        },
+        "text": "Correlation (original vs encrypted): 0.0003 (should be ~0.0)\nCorrelation (original params vs encrypted params): 0.0066\nEncrypted level distribution: L0=478, L1=486, L2=468, L3=450, L4=469, L5=499\n  (Should be ~uniform: 475 each)\nRoundtrip verification: bands=PERFECT, pitch=PERFECT\n\nShannon's perfect secrecy: each encrypted value is equally likely\nto be any number 0-5, regardless of the original. An eavesdropper\nlearns NOTHING from the encrypted stream."
+      }
+    },
+    {
+      "id": 4,
+      "title": "Why It's Unbreakable",
+      "description": "What if the Germans applied their spectral analysis technique to SIGSALY? Listen: it fails completely. With A-3, the spectral shape of speech was preserved (just mirrored), so there was a pattern to find. With the one-time pad, each encrypted value is statistically independent of the original \u2014 the output has 2850 independently random values where A-3 had just one secret number. Claude Shannon proved in 1949 that a one-time pad achieves \"perfect secrecy\": knowing the ciphertext tells you literally nothing about the message, even with infinite computing power.",
+      "outputs": [
+        {
+          "filename": "4a_sigsaly_a3crack_attempt.wav",
+          "duration": 5.7,
+          "peak_db": -0.4,
+          "label": "A-3 crack attempt (FAILS)",
+          "spectrogram": "4a_sigsaly_a3crack_attempt.png"
+        }
+      ],
+      "diagnostics": {
+        "correlation_crack_attempt": 0.0011,
+        "text": "Correlation (original vs crack attempt): 0.0011\nCompare to successful A-3 crack: 0.0208\n\nThe spectral analysis technique that broke A-3 finds nothing.\nThere is no single parameter to guess \u2014 the key has\n2850 independent random values."
+      }
+    },
+    {
+      "id": 5,
+      "title": "The Engineering Challenge: Synchronization",
+      "description": "The one-time pad is mathematically perfect \u2014 but it demands perfect logistics. Both terminals must play their vinyl key records at exactly the same speed, starting at exactly the same moment. If the receiver's turntable is off by even one frame (20 milliseconds), it reads the wrong key values for every subsequent frame, and decryption produces garbage. Listen to what happens with increasing misalignment. This is why SIGSALY required precision time-of-day clocks and why the system weighed 50 tons \u2014 much of that was the synchronization equipment. The key management problem (making, copying, shipping, synchronizing, and destroying the vinyl records) was as critical as the mathematics.",
+      "outputs": [
+        {
+          "filename": "5_desync_1frame.wav",
+          "duration": 5.7,
+          "peak_db": -0.4,
+          "label": "Desync: 1 frame (20ms)",
+          "spectrogram": "5_desync_1frame.png"
+        },
+        {
+          "filename": "5_desync_5frames.wav",
+          "duration": 5.7,
+          "peak_db": -0.4,
+          "label": "Desync: 5 frames (100ms)",
+          "spectrogram": "5_desync_5frames.png"
+        },
+        {
+          "filename": "5_desync_25frames.wav",
+          "duration": 5.7,
+          "peak_db": -0.4,
+          "label": "Desync: 25 frames (500ms)",
+          "spectrogram": "5_desync_25frames.png"
+        }
+      ],
+      "diagnostics": {
+        "desync_table": [
+          {
+            "offset": 1,
+            "time_ms": 20,
+            "match": 485,
+            "total": 2850,
+            "pct": 17.0
+          },
+          {
+            "offset": 5,
+            "time_ms": 100,
+            "match": 478,
+            "total": 2850,
+            "pct": 16.8
+          },
+          {
+            "offset": 25,
+            "time_ms": 500,
+            "match": 496,
+            "total": 2850,
+            "pct": 17.4
+          }
+        ],
+        "random_chance_pct": 16.7,
+        "text": "Offset                Correct   Accuracy  Random Chance\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n0 (perfect sync)         2850     100.0%              \u2014\n1 frame(s) (20ms)         485      17.0%         ~16.7%\n5 frame(s) (100ms)        478      16.8%         ~16.7%\n25 frame(s) (500ms)       496      17.4%         ~16.7%\n\nAll offsets \u2192 ~16.7% accuracy (random chance = 1/6).\nThe one-time pad makes ANY timing error equivalent to a wrong key."
+      }
+    }
+  ],
+  "summary": {
+    "a3_crack_correlation": 0.0208,
+    "sigsaly_encrypted_correlation": 0.0003,
+    "sigsaly_crack_attempt_correlation": 0.0011,
+    "roundtrip_perfect": true
+  }
+}
