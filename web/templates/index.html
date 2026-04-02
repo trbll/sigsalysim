@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIGSALY Simulator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header>
+    <h1><span>SIGSALY</span> Simulator</h1>
+    <p>WWII Secure Voice Communication System (1943–1946) — Educational Demonstration</p>
+</header>
+
+{% if error %}
+<div class="error">{{ error }}</div>
+{% endif %}
+
+<!-- ── Controls Panel ────────────────────────────────── -->
+<form action="{{ url_for('run_pipeline') }}" method="post" enctype="multipart/form-data"
+      class="controls" id="pipeline-form">
+    <h2>Input &amp; Parameters</h2>
+    <div class="controls-grid">
+        <div class="upload-section">
+            <label><strong>Audio Source</strong></label>
+            <input type="file" name="audio_file" accept=".wav,.aiff,.flac,.ogg,.mp3">
+            <span style="font-size: 0.85rem; color: var(--text-muted);">
+                Upload a WAV file, or leave empty to use the built-in sample.
+            </span>
+        </div>
+
+        <div class="params-section">
+            <div class="slider-group">
+                <label>
+                    Telephone Line SNR
+                    <output id="snr-val">{{ results.params.snr_db if results else 28 }}</output> dB
+                </label>
+                <input type="range" name="snr_db" min="10" max="50"
+                       value="{{ results.params.snr_db if results else 28 }}"
+                       oninput="document.getElementById('snr-val').textContent=this.value">
+            </div>
+            <div class="slider-group">
+                <label>
+                    A-3 Carrier Frequency
+                    <output id="carrier-val">{{ results.params.carrier_freq if results else 2000 }}</output> Hz
+                </label>
+                <input type="range" name="carrier_freq" min="500" max="5000" step="50"
+                       value="{{ results.params.carrier_freq if results else 2000 }}"
+                       oninput="document.getElementById('carrier-val').textContent=this.value">
+            </div>
+            <div class="slider-group">
+                <label>
+                    Max Desync Offset
+                    <output id="desync-val">{{ results.params.desync_offsets[-1] if results else 25 }}</output> frames
+                </label>
+                <input type="range" name="desync_max" min="1" max="100"
+                       value="{{ results.params.desync_offsets[-1] if results else 25 }}"
+                       oninput="document.getElementById('desync-val').textContent=this.value">
+            </div>
+        </div>
+
+        <div class="actions">
+            <button type="submit" class="btn btn-primary" onclick="showLoading()">
+                Run Pipeline
+            </button>
+        </div>
+    </div>
+</form>
+
+<!-- ── Loading Spinner ───────────────────────────────── -->
+<div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>Running SIGSALY pipeline... this takes 10-20 seconds.</p>
+</div>
+
+{% if results %}
+
+<!-- ── Source Info ────────────────────────────────────── -->
+<div class="source-info">
+    Source: {{ "{:,}".format(results.source_info.samples) }} samples,
+    {{ results.source_info.sr }} Hz,
+    {{ results.source_info.duration }}s
+    (Nyquist: {{ results.source_info.nyquist }} Hz)
+</div>
+
+<!-- ── Pipeline Stages ───────────────────────────────── -->
+{% for stage in results.stages %}
+<section class="stage" id="stage-{{ stage.id }}">
+    <div class="stage-header">
+        <span class="stage-number">{{ stage.id }}</span>
+        <h2>{{ stage.title }}</h2>
+    </div>
+    <p class="stage-description">{{ stage.description }}</p>
+
+    <div class="output-grid">
+        {% for output in stage.outputs %}
+        <div class="output-card">
+            <h3>{{ output.label }}</h3>
+            <img src="{{ url_for('serve_spectrogram', session_id=results.session_id, filename=output.spectrogram) }}"
+                 alt="Spectrogram: {{ output.label }}" loading="lazy">
+            <audio controls preload="none">
+                <source src="{{ url_for('serve_audio', session_id=results.session_id, filename=output.filename) }}"
+                        type="audio/wav">
+            </audio>
+            <div class="output-meta">{{ output.duration }}s · peak {{ output.peak_db }} dB</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if stage.diagnostics and stage.diagnostics.text %}
+    <div class="diagnostics">{{ stage.diagnostics.text }}</div>
+    {% endif %}
+</section>
+{% endfor %}
+
+<!-- ── Summary ───────────────────────────────────────── -->
+<section class="summary">
+    <h2>Security Comparison</h2>
+    <div class="summary-grid">
+        <div class="summary-item">
+            <div class="label">A-3 Scrambler (cracked)</div>
+            <div class="value bad">
+                Correlation: {{ results.summary.a3_crack_correlation }}
+            </div>
+        </div>
+        <div class="summary-item">
+            <div class="label">SIGSALY OTP (secure)</div>
+            <div class="value good">
+                Correlation: {{ results.summary.sigsaly_encrypted_correlation }}
+            </div>
+        </div>
+        <div class="summary-item">
+            <div class="label">A-3 Crack on SIGSALY</div>
+            <div class="value good">
+                {{ results.summary.sigsaly_crack_attempt_correlation }} (fails)
+            </div>
+        </div>
+        <div class="summary-item">
+            <div class="label">Encryption Roundtrip</div>
+            <div class="value {{ 'good' if results.summary.roundtrip_perfect else 'bad' }}">
+                {{ "PERFECT" if results.summary.roundtrip_perfect else "FAILED" }}
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endif %}
+
+<script>
+function showLoading() {
+    document.getElementById('loading').classList.add('active');
+}
+</script>
+
+</body>
+</html>

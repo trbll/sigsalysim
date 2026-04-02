@@ -37,19 +37,33 @@ Both terminals played their vinyl key records simultaneously. If the turntables 
 sigsalysim/
 ├── input/                      # Source audio files
 │   └── sample_speech.wav       # Default sample (generated via macOS TTS)
-├── output/                     # Generated audio artifacts (17 WAV files)
-├── sigsaly/                    # Core modules (documented, standalone-runnable)
+├── output/                     # Generated audio artifacts (CLI pipeline)
+├── sigsaly/                    # Core DSP modules (documented, standalone-runnable)
 │   ├── __init__.py
 │   ├── telephone.py            # 1940s phone line simulation
 │   ├── scrambler.py            # A-3 frequency inversion + cracker
 │   ├── vocoder.py              # 10-band channel vocoder
 │   ├── encryption.py           # One-time pad (mod-6 arithmetic)
 │   └── key_generation.py       # Vinyl record key generator
+├── web/                        # v2 Flask web dashboard
+│   ├── app.py                  # Flask routes
+│   ├── pipeline.py             # Structured pipeline orchestration
+│   ├── spectrograms.py         # Matplotlib spectrogram generation
+│   ├── templates/index.html    # Single-page UI
+│   └── static/style.css        # Styling
 ├── scripts/
-│   └── run_pipeline.py         # Full demo pipeline (all stages)
+│   └── run_pipeline.py         # v1 CLI pipeline (all stages)
 ├── venv/                       # Python virtual environment
 └── README.md
 ```
+
+## Roadmap
+
+| Version | Status | Description |
+|---------|--------|-------------|
+| **v1 — CLI Pipeline** | ✅ Complete | Python modules + CLI script generating 18 audio files across 6 stages with quantitative diagnostics |
+| **v2 — Web Dashboard** | ✅ Complete | Flask app wrapping v1: upload audio, tweak parameters (SNR, carrier freq, desync), view spectrograms and hear all outputs in the browser |
+| **v3 — Interactive Visualization** | 🔜 Planned | Spinning vinyl record synchronization, real-time cracking workbench, FSK transmission simulation, dual turntable crossover, potentially networked two-party experience |
 
 ## Quick Start
 
@@ -59,10 +73,26 @@ sigsalysim/
 cd ~/Developer/sigsalysim
 python3 -m venv venv
 source venv/bin/activate
-pip install numpy scipy soundfile matplotlib
+pip install numpy scipy soundfile matplotlib flask
 ```
 
-### Run the Full Pipeline
+### v2: Web Dashboard (recommended)
+
+```bash
+source venv/bin/activate
+python web/app.py                     # starts on http://127.0.0.1:3001
+python web/app.py --port 8080         # custom port
+```
+
+Open the URL in your browser. Upload a WAV file (or use the built-in sample), adjust parameters with sliders, and click **Run Pipeline**. All 17 audio outputs appear with spectrograms, audio players, and diagnostic text.
+
+**Features:**
+- Spectrogram visualizations for every output (visual comparison is very compelling)
+- Parameter sliders: telephone SNR (10-50 dB), A-3 carrier frequency (500-5000 Hz), desync offset (1-100 frames)
+- Grouped by stage with educational descriptions and quantitative diagnostics
+- Security comparison summary at the bottom
+
+### v1: CLI Pipeline
 
 ```bash
 source venv/bin/activate
