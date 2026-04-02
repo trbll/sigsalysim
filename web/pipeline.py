@@ -484,6 +484,11 @@ def run_web_pipeline(input_wav_path, params=None):
     band_match = bool(np.array_equal(dec_bands, bands[:len(dec_bands)]))
     pitch_match = bool(np.array_equal(dec_pitch, pitch[:len(dec_pitch)]))
 
+    # Compare decrypted audio to what was sent (vocoded audio from Stage 2)
+    corr_decrypted_vs_vocoded = _correlation(decrypted, vocoded)
+    # Also compare to the original (will be lower — vocoder is lossy)
+    corr_decrypted_vs_original = _correlation(decrypted, data)
+
     stages.append({
         'id': 5,
         'title': 'Decryption: Recovering the Voice',
@@ -517,14 +522,24 @@ def run_web_pipeline(input_wav_path, params=None):
         'diagnostics': {
             'roundtrip_bands': band_match,
             'roundtrip_pitch': pitch_match,
+            'correlation_decrypted_vs_vocoded': corr_decrypted_vs_vocoded,
+            'correlation_decrypted_vs_original': corr_decrypted_vs_original,
             'text': (
                 f'Roundtrip verification:\n'
                 f'  Band levels:  {"PERFECT -- every value matches" if band_match else "FAILED"}\n'
                 f'  Pitch levels: {"PERFECT -- every value matches" if pitch_match else "FAILED"}\n'
                 f'  Total values checked: {total_values} bands + {len(pitch)} pitch = {total_values + len(pitch)}\n'
-                f'\nThe one-time pad is perfectly reversible: subtract to encrypt,\n'
-                f'add to decrypt. No information is lost -- every single parameter\n'
-                f'is recovered exactly, bit for bit.'
+                f'\nAudio waveform similarity:\n'
+                f'  Decrypted vs vocoded (Stage 2):  {corr_decrypted_vs_vocoded}\n'
+                f'  Decrypted vs original (Stage 0): {corr_decrypted_vs_original}\n'
+                f'\n  Why isn\'t decrypted-vs-vocoded closer to 1.0? The vocoder\n'
+                f'  PARAMETERS are recovered perfectly (verified above), but the audio\n'
+                f'  waveform differs because the resynthesizer uses random white noise\n'
+                f'  for unvoiced sounds ("s", "f", "sh"). Each synthesis run generates\n'
+                f'  different noise samples, so the waveforms aren\'t identical even\n'
+                f'  though they sound the same to human ears. This is the nature of\n'
+                f'  parametric coding: the parameters are exact, the rendering varies.\n'
+                f'  (Listen to both -- they should sound essentially identical.)'
             ),
         }
     })
