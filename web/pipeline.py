@@ -89,19 +89,7 @@ def _telephone(signal, sr, snr_db=28):
 # ============================================================================
 
 def run_web_pipeline(input_wav_path, params=None):
-    """Run the full SIGSALY pipeline and return structured results.
-
-    Args:
-        input_wav_path: Path to input WAV file
-        params: Optional dict with:
-            snr_db (float): telephone SNR, default 28
-            carrier_freq (int): A-3 carrier, default 2000
-            desync_offsets (list): frame offsets, default [1, 5, 25]
-            key_seed (int): key generation seed, default 42
-
-    Returns:
-        Structured dict with all stages, outputs, spectrograms, and diagnostics
-    """
+    """Run the full SIGSALY pipeline and return structured results."""
     params = params or {}
     snr_db = params.get('snr_db', 28)
     carrier_freq = params.get('carrier_freq', 2000)
@@ -123,7 +111,6 @@ def run_web_pipeline(input_wav_path, params=None):
         'nyquist': sr // 2
     }
 
-    # Collect all audio signals for batch spectrogram generation
     audio_signals = {}
     stages = []
 
@@ -139,10 +126,10 @@ def run_web_pipeline(input_wav_path, params=None):
         'id': 0,
         'title': 'The Problem: Open Lines',
         'description': (
-            'During WWII, Allied leaders needed to coordinate across the Atlantic — '
-            'but long-distance phone calls traveled over radio links and cables that '
+            'During WWII, Allied leaders needed to coordinate across the Atlantic '
+            '-- but long-distance phone calls traveled over radio links and cables that '
             'anyone could tap. Here\'s the original voice, and what it sounded like '
-            'after traveling through a 1940s phone line: bandlimited to 300–3400 Hz, '
+            'after traveling through a 1940s phone line: bandlimited to 300-3400 Hz, '
             f'degraded by tube amplifier distortion, and buried under noise (SNR = {snr_db} dB). '
             'Distorted, but perfectly intelligible. An eavesdropper on the line hears everything.'
         ),
@@ -168,7 +155,6 @@ def run_web_pipeline(input_wav_path, params=None):
     audio_signals['1a_a3_scrambled.wav'] = (scrambled, 'A-3 Scrambled')
     audio_signals['1b_a3_scrambled_telephone.wav'] = (scrambled_tel, 'A-3 Scrambled (wire)')
 
-    # Crack
     best_freq, cracked, scores = crack_by_spectral_analysis(scrambled, sr)
     cracked_tel = _telephone(cracked, sr, snr_db)
     meta_1c = _save_wav(cracked, sr, session_dir, '1c_a3_cracked.wav')
@@ -184,14 +170,14 @@ def run_web_pipeline(input_wav_path, params=None):
         'id': 1,
         'title': 'First Attempt: A-3 Scrambler',
         'description': (
-            'The Allies\' first solution was the A-3 scrambler — flip the audio spectrum '
+            'The Allies\' first solution was the A-3 scrambler -- flip the audio spectrum '
             f'around a secret carrier frequency ({carrier_freq} Hz) so low sounds become high '
             'and vice versa. Listen to the scrambled audio: it sounds like garbled alien noise. '
             'Surely no one could understand that? '
             'But the Germans could. By 1941, they were routinely cracking A-3 calls using '
             'spectral analysis. The "secret" was a single number (the carrier frequency), and '
             'speech has such distinctive spectral patterns that finding it was trivial. '
-            'Listen to the cracked output — the speech is recovered. The A-3 was security through '
+            'Listen to the cracked output -- the speech is recovered. The A-3 was security through '
             'obscurity, and it had failed. The Allies needed something fundamentally different.'
         ),
         'outputs': [
@@ -231,7 +217,6 @@ def run_web_pipeline(input_wav_path, params=None):
     corr_vocoded = _correlation(data, vocoded)
     bands, pitch, voiced, max_vals = frames_to_array(frames)
 
-    # Quantization level distribution
     level_counts = {lv: int(np.sum(bands == lv)) for lv in range(NUM_LEVELS)}
     total_values = bands.size
 
@@ -239,13 +224,13 @@ def run_web_pipeline(input_wav_path, params=None):
         'id': 2,
         'title': 'The Key Insight: Digitize First',
         'description': (
-            'The A-3 failed because it scrambled the analog waveform — the spectral '
+            'The A-3 failed because it scrambled the analog waveform -- the spectral '
             'shape of speech survived the transformation. SIGSALY\'s breakthrough was to '
             'first DIGITIZE the speech using a vocoder ("voice coder"). The vocoder '
             f'splits audio into {NUM_BANDS} frequency bands and measures the energy in each, '
             f'{FRAME_RATE} times per second. Each measurement is quantized to just '
-            f'{NUM_LEVELS} discrete levels (0–5). The result sounds robotic but is '
-            'perfectly intelligible — and crucially, it\'s now a stream of small integers '
+            f'{NUM_LEVELS} discrete levels (0-5). The result sounds robotic but is '
+            'perfectly intelligible -- and crucially, it\'s now a stream of small integers '
             'that can be encrypted with mathematics.'
         ),
         'outputs': [
@@ -264,7 +249,7 @@ def run_web_pipeline(input_wav_path, params=None):
                 f'Voiced: {n_voiced}/{len(frames)} ({100*n_voiced/len(frames):.0f}%), '
                 f'Unvoiced: {len(frames)-n_voiced}/{len(frames)} ({100*(len(frames)-n_voiced)/len(frames):.0f}%)\n'
                 f'Compression: {source_info["samples"]//len(frames)//12 * 12}:1 '
-                f'({source_info["sr"]} samples/sec → {12*FRAME_RATE} values/sec)\n'
+                f'({source_info["sr"]} samples/sec -> {12*FRAME_RATE} values/sec)\n'
                 f'Quantization: {NUM_LEVELS} levels per band ({NUM_BANDS} bands)\n'
                 f'Level distribution: {", ".join(f"L{k}={v}" for k,v in level_counts.items())}\n'
                 f'Correlation (original vs vocoded): {corr_vocoded}\n'
@@ -275,126 +260,188 @@ def run_web_pipeline(input_wav_path, params=None):
         }
     })
 
-    # ── STAGE 3: Full SIGSALY ───────────────────────────────────
+    # ── STAGE 3: The Key Record ─────────────────────────────────
     key_duration = len(data) / sr + 5
     key = generate_key_record(key_duration, seed=key_seed)
+    key_audio = key_to_audio(key, sr=sr)
 
-    # Encrypt
+    meta_3e = _save_wav(key_audio, sr, session_dir, '3e_key_record_audio.wav')
+    audio_signals['3e_key_record_audio.wav'] = (key_audio, 'Key Record (vinyl)')
+
+    key_n_frames = key['metadata']['n_frames']
+    key_n_values = key_n_frames * NUM_BANDS + key_n_frames
+
+    stages.append({
+        'id': 3,
+        'title': 'The Key: Vinyl Records of Random Noise',
+        'description': (
+            'To encrypt the vocoder\'s integer stream, SIGSALY needed a source of randomness '
+            'that was truly unpredictable. Bell Labs generated random noise using mercury-vapor '
+            'vacuum tubes -- the thermal chaos of hot ionized gas, sampled and quantized into '
+            'values from 0 to 5. This noise was recorded onto vinyl phonograph records. Each '
+            'record held 12 minutes of key material. Identical copies were pressed and shipped '
+            'by armed military courier to each terminal -- one for Washington, one for London. '
+            'Used records were destroyed immediately after the call. Listen to what a key record '
+            'sounded like: pure noise. No pattern, no structure, no information -- just randomness. '
+            'That\'s exactly what makes the encryption unbreakable.'
+        ),
+        'outputs': [
+            {**meta_3e, 'label': 'Key record (vinyl sound)', 'spectrogram': '3e_key_record_audio.png'},
+        ],
+        'diagnostics': {
+            'text': (
+                f'Key record: {key_n_frames} frames at {FRAME_RATE} fps '
+                f'({key["metadata"]["duration_seconds"]:.1f}s)\n'
+                f'Total random values: {key_n_values:,} '
+                f'({key_n_frames} frames x ({NUM_BANDS} bands + 1 pitch))\n'
+                f'Each value: independently, uniformly random in [0, {NUM_LEVELS-1}]\n'
+                f'\nThree requirements for unbreakable encryption (all must hold):\n'
+                f'  1. Key must be truly random (SIGSALY: vacuum tube thermal noise)\n'
+                f'  2. Key must be at least as long as the message (12-min records)\n'
+                f'  3. Key must never be reused (records destroyed after use)'
+            ),
+        }
+    })
+
+    # ── STAGE 4: Encryption ─────────────────────────────────────
     enc_bands, enc_pitch = encrypt_vocoder_params(bands, pitch, key)
     encrypted_audio = encrypted_to_audio(enc_bands, enc_pitch, voiced, sr)
     encrypted_tel = _telephone(encrypted_audio, sr, snr_db)
 
-    # Decrypt with correct key
-    dec_bands, dec_pitch = decrypt_vocoder_params(enc_bands, enc_pitch, key)
-    dec_frames = array_to_frames(dec_bands, dec_pitch, voiced[:len(dec_bands)], max_vals[:len(dec_bands)])
-    decrypted = synthesize(dec_frames, sr)
-    decrypted_tel = _telephone(decrypted, sr, snr_db)
-
-    # Key audio
-    key_audio = key_to_audio(key, sr=sr)
-
-    meta_3a = _save_wav(encrypted_audio, sr, session_dir, '3a_sigsaly_encrypted.wav')
-    meta_3b = _save_wav(encrypted_tel, sr, session_dir, '3b_sigsaly_encrypted_telephone.wav')
-    meta_3c = _save_wav(decrypted, sr, session_dir, '3c_sigsaly_decrypted.wav')
-    meta_3d = _save_wav(decrypted_tel, sr, session_dir, '3d_sigsaly_decrypted_telephone.wav')
-    meta_3e = _save_wav(key_audio, sr, session_dir, '3e_key_record_audio.wav')
-
-    audio_signals['3a_sigsaly_encrypted.wav'] = (encrypted_audio, 'SIGSALY Encrypted')
-    audio_signals['3b_sigsaly_encrypted_telephone.wav'] = (encrypted_tel, 'Encrypted (wire)')
-    audio_signals['3c_sigsaly_decrypted.wav'] = (decrypted, 'SIGSALY Decrypted')
-    audio_signals['3d_sigsaly_decrypted_telephone.wav'] = (decrypted_tel, 'Decrypted (wire)')
-    audio_signals['3e_key_record_audio.wav'] = (key_audio, 'Key Record (vinyl)')
+    meta_4a = _save_wav(encrypted_audio, sr, session_dir, '4a_sigsaly_encrypted.wav')
+    meta_4b = _save_wav(encrypted_tel, sr, session_dir, '4b_sigsaly_encrypted_telephone.wav')
+    audio_signals['4a_sigsaly_encrypted.wav'] = (encrypted_audio, 'SIGSALY Encrypted')
+    audio_signals['4b_sigsaly_encrypted_telephone.wav'] = (encrypted_tel, 'Encrypted (wire)')
 
     corr_encrypted = _correlation(data, encrypted_audio)
-    band_match = bool(np.array_equal(dec_bands, bands[:len(dec_bands)]))
-    pitch_match = bool(np.array_equal(dec_pitch, pitch[:len(dec_pitch)]))
-
-    # Encryption uniformity
     enc_level_counts = {lv: int(np.sum(enc_bands == lv)) for lv in range(NUM_LEVELS)}
     enc_correlation = round(float(np.corrcoef(
         bands.flatten().astype(float), enc_bands.flatten().astype(float)
     )[0, 1]), 4)
 
     stages.append({
-        'id': 3,
-        'title': 'The Solution: One-Time Pad Encryption',
+        'id': 4,
+        'title': 'Encryption: Vocoder + Key = Noise',
         'description': (
-            'Now that speech is a stream of integers (0–5), SIGSALY encrypts each value by '
-            'subtracting a random key value using modular arithmetic: encrypted = (voice − key) mod 6. '
-            'The key comes from a vinyl record filled with random noise generated by mercury-vapor '
-            'vacuum tubes. Identical copies were shipped by armed courier to each terminal. '
-            'Listen to the encrypted output — it\'s pure noise. No trace of speech remains. '
-            'Then listen to the decrypted output — with the correct key, the vocoded speech is '
-            'perfectly recovered. The key record itself is also available: it\'s what the vinyl '
-            'sounded like on a phonograph — random noise, which is exactly what makes the '
-            'one-time pad unbreakable.'
+            'Now SIGSALY combines the two pieces. For each vocoder parameter (a number '
+            'from 0 to 5), it subtracts the corresponding key value using modular arithmetic: '
+            'encrypted = (voice - key) mod 6. For example, if the voice level is 3 and the '
+            'key value is 5: (3 - 5) mod 6 = -2 mod 6 = 4. The encrypted value (4) reveals '
+            'nothing about the original (3) because the key (5) is random and unknown to the '
+            'eavesdropper. Listen to the result -- the encrypted output is pure noise. Compare '
+            'its spectrogram to the original: no speech structure remains. This is what '
+            'travels over the phone line.'
         ),
         'outputs': [
-            {**meta_3a, 'label': 'Encrypted (eavesdropper hears)', 'spectrogram': '3a_sigsaly_encrypted.png'},
-            {**meta_3b, 'label': 'Encrypted (over the wire)', 'spectrogram': '3b_sigsaly_encrypted_telephone.png'},
-            {**meta_3c, 'label': 'Decrypted (correct key)', 'spectrogram': '3c_sigsaly_decrypted.png'},
-            {**meta_3d, 'label': 'Decrypted (over the wire)', 'spectrogram': '3d_sigsaly_decrypted_telephone.png'},
-            {**meta_3e, 'label': 'Key record (vinyl sound)', 'spectrogram': '3e_key_record_audio.png'},
+            {**meta_4a, 'label': 'Encrypted (eavesdropper hears)', 'spectrogram': '4a_sigsaly_encrypted.png'},
+            {**meta_4b, 'label': 'Encrypted (over the wire)', 'spectrogram': '4b_sigsaly_encrypted_telephone.png'},
         ],
         'diagnostics': {
             'correlation_encrypted': corr_encrypted,
             'original_encrypted_correlation': enc_correlation,
-            'roundtrip_bands': band_match,
-            'roundtrip_pitch': pitch_match,
             'encrypted_distribution': enc_level_counts,
             'text': (
-                f'Correlation (original vs encrypted): {corr_encrypted} (should be ~0.0)\n'
+                f'Correlation (original vs encrypted audio): {corr_encrypted} (should be ~0.0)\n'
                 f'Correlation (original params vs encrypted params): {enc_correlation}\n'
                 f'Encrypted level distribution: {", ".join(f"L{k}={v}" for k,v in enc_level_counts.items())}\n'
-                f'  (Should be ~uniform: {total_values//NUM_LEVELS} each)\n'
-                f'Roundtrip verification: bands={"PERFECT" if band_match else "FAILED"}, '
-                f'pitch={"PERFECT" if pitch_match else "FAILED"}\n'
-                f'\nShannon\'s perfect secrecy: each encrypted value is equally likely\n'
-                f'to be any number 0-5, regardless of the original. An eavesdropper\n'
-                f'learns NOTHING from the encrypted stream.'
+                f'  (Should be ~uniform: ~{total_values//NUM_LEVELS} each)\n'
+                f'\nThe encrypted values are uniformly distributed -- every level (0-5)\n'
+                f'appears with roughly equal frequency, regardless of what the original\n'
+                f'speech contained. This is the hallmark of good encryption.'
             ),
         }
     })
 
-    # ── STAGE 4: Cracking Attempt ───────────────────────────────
+    # ── STAGE 5: Decryption ─────────────────────────────────────
+    dec_bands, dec_pitch = decrypt_vocoder_params(enc_bands, enc_pitch, key)
+    dec_frames = array_to_frames(dec_bands, dec_pitch, voiced[:len(dec_bands)], max_vals[:len(dec_bands)])
+    decrypted = synthesize(dec_frames, sr)
+    decrypted_tel = _telephone(decrypted, sr, snr_db)
+
+    meta_5a = _save_wav(decrypted, sr, session_dir, '5a_sigsaly_decrypted.wav')
+    meta_5b = _save_wav(decrypted_tel, sr, session_dir, '5b_sigsaly_decrypted_telephone.wav')
+    audio_signals['5a_sigsaly_decrypted.wav'] = (decrypted, 'SIGSALY Decrypted')
+    audio_signals['5b_sigsaly_decrypted_telephone.wav'] = (decrypted_tel, 'Decrypted (wire)')
+
+    band_match = bool(np.array_equal(dec_bands, bands[:len(dec_bands)]))
+    pitch_match = bool(np.array_equal(dec_pitch, pitch[:len(dec_pitch)]))
+
+    stages.append({
+        'id': 5,
+        'title': 'Decryption: Recovering the Voice',
+        'description': (
+            'At the receiving terminal in London, the identical copy of the vinyl key record '
+            'plays in perfect synchronization. Decryption is simply the inverse operation: '
+            'add the key value back. decrypted = (encrypted + key) mod 6. Continuing the '
+            'example: (4 + 5) mod 6 = 9 mod 6 = 3 -- the original value is recovered '
+            'exactly. The decrypted parameters are fed into the vocoder\'s resynthesizer, '
+            'which reconstructs audible speech. Listen: the voice is back, with the '
+            'characteristic robotic quality of vocoded audio. This is what Churchill and '
+            'Roosevelt actually heard during their secure wartime conversations.'
+        ),
+        'outputs': [
+            {**meta_5a, 'label': 'Decrypted (correct key)', 'spectrogram': '5a_sigsaly_decrypted.png'},
+            {**meta_5b, 'label': 'Decrypted (over the wire)', 'spectrogram': '5b_sigsaly_decrypted_telephone.png'},
+        ],
+        'diagnostics': {
+            'roundtrip_bands': band_match,
+            'roundtrip_pitch': pitch_match,
+            'text': (
+                f'Roundtrip verification:\n'
+                f'  Band levels:  {"PERFECT -- every value matches" if band_match else "FAILED"}\n'
+                f'  Pitch levels: {"PERFECT -- every value matches" if pitch_match else "FAILED"}\n'
+                f'  Total values checked: {total_values} bands + {len(pitch)} pitch = {total_values + len(pitch)}\n'
+                f'\nThe one-time pad is perfectly reversible: subtract to encrypt,\n'
+                f'add to decrypt. No information is lost -- every single parameter\n'
+                f'is recovered exactly, bit for bit.'
+            ),
+        }
+    })
+
+    # ── STAGE 6: Cracking Attempt ───────────────────────────────
     _, crack_attempt, _ = crack_by_spectral_analysis(encrypted_audio, sr)
-    meta_4a = _save_wav(crack_attempt, sr, session_dir, '4a_sigsaly_a3crack_attempt.wav')
-    audio_signals['4a_sigsaly_a3crack_attempt.wav'] = (crack_attempt, 'A-3 Crack on SIGSALY (FAILS)')
+    meta_6a = _save_wav(crack_attempt, sr, session_dir, '6a_sigsaly_a3crack_attempt.wav')
+    audio_signals['6a_sigsaly_a3crack_attempt.wav'] = (crack_attempt, 'A-3 Crack on SIGSALY (FAILS)')
 
     corr_crack_attempt = _correlation(data, crack_attempt)
 
     stages.append({
-        'id': 4,
+        'id': 6,
         'title': 'Why It\'s Unbreakable',
         'description': (
             'What if the Germans applied their spectral analysis technique to SIGSALY? '
-            'Listen: it fails completely. With A-3, the spectral shape of speech was '
-            'preserved (just mirrored), so there was a pattern to find. With the one-time '
-            'pad, each encrypted value is statistically independent of the original — the '
-            f'output has {total_values} independently random values where A-3 had just one '
+            'Listen: it fails completely. With A-3, the spectral shape of speech survived '
+            'the transformation (just mirrored), so there was a pattern to find. With the '
+            'one-time pad, each encrypted value is statistically independent of the original -- '
+            f'the key has {key_n_values:,} independently random values where A-3 had just one '
             'secret number. Claude Shannon proved in 1949 that a one-time pad achieves '
             '"perfect secrecy": knowing the ciphertext tells you literally nothing about '
             'the message, even with infinite computing power.'
         ),
         'outputs': [
-            {**meta_4a, 'label': 'A-3 crack attempt (FAILS)', 'spectrogram': '4a_sigsaly_a3crack_attempt.png'},
+            {**meta_6a, 'label': 'A-3 crack attempt (FAILS)', 'spectrogram': '6a_sigsaly_a3crack_attempt.png'},
         ],
         'diagnostics': {
             'correlation_crack_attempt': corr_crack_attempt,
             'text': (
                 f'Correlation (original vs crack attempt): {corr_crack_attempt}\n'
                 f'Compare to successful A-3 crack: {corr_cracked}\n'
-                f'\nThe spectral analysis technique that broke A-3 finds nothing.\n'
-                f'There is no single parameter to guess — the key has\n'
-                f'{total_values} independent random values.'
+                f'\nThe spectral analysis technique that broke A-3 finds nothing here.\n'
+                f'There is no single parameter to guess -- the key has {key_n_values:,}\n'
+                f'independent random values. Brute-forcing all possibilities would\n'
+                f'require trying {NUM_LEVELS}^{key_n_values} combinations -- a number\n'
+                f'far larger than the atoms in the observable universe.\n'
+                f'\nSee: Shannon, C.E. (1949). "Communication Theory of Secrecy Systems."\n'
+                f'https://pages.cs.wisc.edu/~rist/642-spring-2014/shannon-secrecy.pdf'
             ),
         }
     })
 
-    # ── STAGE 5: Clock Desynchronization ────────────────────────
+    # ── STAGE 7: Clock Desynchronization ────────────────────────
     desync_outputs = []
     desync_table = []
     correct_total = int(np.sum(dec_bands == bands[:len(dec_bands)]))
+    frame_duration_ms = 1000 / FRAME_RATE
 
     for offset in desync_offsets:
         desync_bands, desync_pitch = decrypt_with_offset(
@@ -407,7 +454,7 @@ def run_web_pipeline(input_wav_path, params=None):
         desync_audio = synthesize(desync_frames, sr)
 
         plural = 's' if offset > 1 else ''
-        filename = f'5_desync_{offset}frame{plural}.wav'
+        filename = f'7_desync_{offset}frame{plural}.wav'
         time_ms = offset * 1000 // FRAME_RATE
         label = f'Desync: {offset} frame{plural} ({time_ms}ms)'
 
@@ -428,10 +475,15 @@ def run_web_pipeline(input_wav_path, params=None):
 
     random_chance = round(100 / NUM_LEVELS, 1)
 
+    sep = '-' * 20
     desync_text_lines = [
+        f'What is a "frame"?\n'
+        f'  The vocoder samples speech {FRAME_RATE} times per second.\n'
+        f'  1 frame = 1/{FRAME_RATE}th of a second = {frame_duration_ms:.0f} milliseconds.\n'
+        f'  That\'s roughly the duration of a single consonant sound.\n',
         f'{"Offset":<20} {"Correct":>8} {"Accuracy":>10} {"Random Chance":>14}',
-        f'{"─"*20} {"─"*8} {"─"*10} {"─"*14}',
-        f'{"0 (perfect sync)":<20} {correct_total:>8} {"100.0%":>10} {"—":>14}',
+        f'{sep} {sep[:8]} {sep[:10]} {sep[:14]}',
+        f'{"0 (perfect sync)":<20} {correct_total:>8} {"100.0%":>10} {"--":>14}',
     ]
     for row in desync_table:
         label = f'{row["offset"]} frame(s) ({row["time_ms"]}ms)'
@@ -439,23 +491,30 @@ def run_web_pipeline(input_wav_path, params=None):
             f'{label:<20} {row["match"]:>8} {row["pct"]:>9.1f}% {f"~{random_chance}%":>14}'
         )
     desync_text_lines.append(
-        f'\nAll offsets → ~{random_chance}% accuracy (random chance = 1/{NUM_LEVELS}).\n'
-        f'The one-time pad makes ANY timing error equivalent to a wrong key.'
+        f'\nAll offsets converge to ~{random_chance}% accuracy = random chance (1/{NUM_LEVELS}).\n'
+        f'Whether the turntable is off by {frame_duration_ms:.0f}ms or 2 full seconds,\n'
+        f'the result is equally useless. The one-time pad is all-or-nothing.'
     )
 
     stages.append({
-        'id': 5,
+        'id': 7,
         'title': 'The Engineering Challenge: Synchronization',
         'description': (
-            'The one-time pad is mathematically perfect — but it demands perfect logistics. '
+            'The one-time pad is mathematically perfect -- but it demands perfect logistics. '
             'Both terminals must play their vinyl key records at exactly the same speed, '
-            'starting at exactly the same moment. If the receiver\'s turntable is off by even '
-            'one frame (20 milliseconds), it reads the wrong key values for every subsequent '
-            'frame, and decryption produces garbage. Listen to what happens with increasing '
-            'misalignment. This is why SIGSALY required precision time-of-day clocks and why '
-            'the system weighed 50 tons — much of that was the synchronization equipment. '
-            'The key management problem (making, copying, shipping, synchronizing, and destroying '
-            'the vinyl records) was as critical as the mathematics.'
+            'starting at exactly the same moment. The vocoder produces one frame every '
+            f'{frame_duration_ms:.0f} milliseconds ({FRAME_RATE} frames per second). If the '
+            'receiver\'s turntable drifts by even a single frame, it reads the wrong key value '
+            'for that frame and every frame after it. Since adjacent key values are '
+            'independently random, using the wrong one is no better than using a completely '
+            'different key. Listen to what happens with increasing misalignment: 1 frame '
+            f'({frame_duration_ms:.0f}ms) sounds just as destroyed as 25 frames '
+            f'({25 * frame_duration_ms:.0f}ms). '
+            'This is why SIGSALY required precision time-of-day clocks at both terminals, '
+            'and why the complete system weighed over 50 tons and filled 40 equipment racks. '
+            'The key management problem -- manufacturing, duplicating, shipping by armed courier, '
+            'synchronizing playback, and destroying used records -- was as critical to security '
+            'as the mathematics.'
         ),
         'outputs': desync_outputs,
         'diagnostics': {
