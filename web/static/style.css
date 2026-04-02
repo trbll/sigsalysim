@@ -410,6 +410,24 @@ footer a:hover {
     line-height: 1.5;
 }
 
+/* ── Output Group Headings ────────────────────── */
+
+.output-group-heading {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 1rem;
+    margin-bottom: 0.6rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px dashed var(--border);
+}
+
+.output-group-heading:first-of-type {
+    margin-top: 0;
+}
+
 /* ── Output Card Grid ─────────────────────────── */
 
 .output-grid {
@@ -417,6 +435,10 @@ footer a:hover {
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 1.25rem;
     margin-bottom: 1rem;
+}
+
+.output-grid-2col {
+    grid-template-columns: repeat(2, 1fr) !important;
 }
 
 .output-card {

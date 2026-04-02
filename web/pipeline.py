@@ -180,12 +180,23 @@ def run_web_pipeline(input_wav_path, params=None):
             'Listen to the cracked output -- the speech is recovered. The A-3 was security through '
             'obscurity, and it had failed. The Allies needed something fundamentally different.'
         ),
-        'outputs': [
-            {**meta_1a, 'label': 'A-3 Scrambled', 'spectrogram': '1a_a3_scrambled.png'},
-            {**meta_1b, 'label': 'A-3 Scrambled (wire)', 'spectrogram': '1b_a3_scrambled_telephone.png'},
-            {**meta_1c, 'label': 'A-3 CRACKED', 'spectrogram': '1c_a3_cracked.png'},
-            {**meta_1d, 'label': 'A-3 Cracked (wire)', 'spectrogram': '1d_a3_cracked_telephone.png'},
+        'output_groups': [
+            {
+                'heading': 'What the Allies sent (scrambled)',
+                'outputs': [
+                    {**meta_1a, 'label': 'A-3 Scrambled', 'spectrogram': '1a_a3_scrambled.png'},
+                    {**meta_1b, 'label': 'Scrambled (over the wire)', 'spectrogram': '1b_a3_scrambled_telephone.png'},
+                ],
+            },
+            {
+                'heading': 'What the Germans recovered (cracked)',
+                'outputs': [
+                    {**meta_1c, 'label': 'A-3 CRACKED', 'spectrogram': '1c_a3_cracked.png'},
+                    {**meta_1d, 'label': 'Cracked (over the wire)', 'spectrogram': '1d_a3_cracked_telephone.png'},
+                ],
+            },
         ],
+        'outputs': [],
         'diagnostics': {
             'carrier_freq_actual': carrier_freq,
             'carrier_freq_found': round(best_freq),
