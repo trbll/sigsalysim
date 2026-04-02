@@ -251,6 +251,13 @@ def run_pipeline(input_wav, output_dir):
     key = generate_key_record(key_duration, seed=42, verbose=True)
     save_key_record(key, f"{output_dir}/key_record_sender.npz")
 
+    # ── Render the key as audio (what the vinyl record sounded like) ──
+    from sigsaly.key_generation import key_to_audio
+    key_audio = key_to_audio(key, sr=sr)
+    save(key_audio, sr, f"{output_dir}/3e_key_record_audio.wav",
+         "Key record (vinyl phonograph sound)")
+    print(f"     (This is what the vinyl key record sounded like — pure noise)")
+
     # ── Encrypt ──
     bands, pitch, voiced, max_vals = frames_to_array(frames)
     enc_bands, enc_pitch = encrypt_vocoder_params(bands, pitch, key, verbose=True)
@@ -392,6 +399,7 @@ def run_pipeline(input_wav, output_dir):
     print("  │ 2a/2b  │ Vocoder only (robotic but intelligible)        │")
     print("  │ 3a/3b  │ SIGSALY encrypted (pure random noise)          │")
     print("  │ 3c/3d  │ SIGSALY decrypted (vocoded speech restored)    │")
+    print("  │ 3e     │ Key record — what the vinyl sounded like       │")
     print("  │ 4a     │ A-3 crack on SIGSALY — FAILS (still noise)     │")
     print("  │ 5a-c   │ Clock desync — even 20ms ruins decryption      │")
     print("  └────────┴────────────────────────────────────────────────┘")

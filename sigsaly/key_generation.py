@@ -166,6 +166,71 @@ def duplicate_key_record(key):
     }
 
 
+def key_to_audio(key, sr=22050):
+    """Convert a key record to audible audio — what the vinyl sounded like.
+
+    In the real SIGSALY, the key records were vinyl phonograph records filled
+    with random noise from mercury-vapor vacuum tubes. If you played one on
+    a regular phonograph, you'd hear noise — because that's literally what
+    was recorded on them.
+
+    This function renders the key as audio in two combined layers:
+
+    1. Raw noise band: white noise filtered to telephone bandwidth (300-3400 Hz).
+       This is what the physical vinyl record sounded like — the analog noise
+       from the mercury-vapor tubes before quantization.
+
+    2. Vocoder-resynthesized key: the quantized key values (0-5) fed through
+       the vocoder synthesizer. This sounds like random robotic babble —
+       it's what the key "means" as vocoder parameters. Since the values
+       are random, you get random band amplitudes and random pitch, producing
+       no speech-like structure at all.
+
+    Listening to this helps students understand:
+      - The key is just NOISE — there's no hidden message in it
+      - When this noise is subtracted from speech (mod 6), it obliterates
+        all speech structure in the encrypted output
+      - The vinyl record was literally a physical random number generator
+
+    Args:
+        key: Key record dict from generate_key_record
+        sr:  Sample rate for the output audio
+
+    Returns:
+        Audio signal (1D numpy array) at the given sample rate
+    """
+    from .vocoder import array_to_frames, synthesize
+
+    n_frames = len(key['band_key'])
+
+    # Layer 1: Raw noise (what the physical vinyl sounded like)
+    # Generate white noise, bandpass to telephone range
+    n_samples = n_frames * (sr // FRAME_RATE)
+    raw_noise = np.random.normal(0, 0.3, n_samples)
+    from scipy.signal import butter, sosfilt
+    sos = butter(4, [300, 3400], btype='band', fs=sr, output='sos')
+    raw_noise = sosfilt(sos, raw_noise)
+
+    # Layer 2: Vocoder resynthesis of the random key values
+    # Feed the random 0-5 values through the vocoder to hear what
+    # "random vocoder parameters" sound like (random robotic babble)
+    voiced_random = np.random.choice([True, False], size=n_frames, p=[0.5, 0.5])
+    max_vals = np.ones(n_frames)
+    frames = array_to_frames(key['band_key'], key['pitch_key'], voiced_random, max_vals)
+    vocoder_noise = synthesize(frames, sr)
+
+    # Mix: mostly raw noise with vocoder texture underneath
+    min_len = min(len(raw_noise), len(vocoder_noise))
+    mixed = 0.6 * raw_noise[:min_len] + 0.4 * vocoder_noise[:min_len]
+
+    # Normalize
+    peak = np.max(np.abs(mixed))
+    if peak > 0:
+        mixed = mixed / peak * 0.95
+
+    return mixed
+
+
 def _print_key_diagnostics(key):
     """Print quantitative diagnostics about the generated key."""
     band_key = key['band_key']
@@ -222,17 +287,54 @@ def _print_key_diagnostics(key):
 
 if __name__ == '__main__':
     import sys
+    import soundfile as sf
 
-    duration = float(sys.argv[1]) if len(sys.argv) > 1 else 30
-    seed = int(sys.argv[2]) if len(sys.argv) > 2 else None
-    outpath = sys.argv[3] if len(sys.argv) > 3 else 'output/key_record.npz'
+    if len(sys.argv) < 2:
+        print("Usage: python -m sigsaly.key_generation <duration_seconds> [seed] [output_dir]")
+        print()
+        print("Generates a random key record ('vinyl record') and exports it as both")
+        print("a .npz data file and a .wav audio file so you can HEAR the key.")
+        print()
+        print("Args:")
+        print("  duration_seconds  Length of key material in seconds")
+        print("  seed              Random seed for reproducibility (optional)")
+        print("  output_dir        Output directory (default: output/)")
+        print()
+        print("Examples:")
+        print("  python -m sigsaly.key_generation 30              # 30s of key material")
+        print("  python -m sigsaly.key_generation 10 42           # reproducible with seed")
+        print("  python -m sigsaly.key_generation 60 None results/  # 60s, random, custom dir")
+        print()
+        print("Outputs:")
+        print("  key_record.npz  — Key data (for encryption/decryption)")
+        print("  key_record.wav  — Audible key (what the vinyl record sounded like)")
+        sys.exit(1)
+
+    duration = float(sys.argv[1])
+    seed = int(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[2] != 'None' else None
+    outdir = sys.argv[3] if len(sys.argv) > 3 else 'output'
 
     print(f"Key Record Generator ('Vinyl Record' Simulator)")
-    print(f"=" * 50)
+    print(f"=" * 55)
 
     key = generate_key_record(duration, seed=seed, verbose=True)
 
-    os.makedirs(os.path.dirname(outpath) or '.', exist_ok=True)
-    save_key_record(key, outpath)
-    print(f"  Key record saved: {outpath}")
-    print(f"  File size: {os.path.getsize(outpath + '.npz' if not outpath.endswith('.npz') else outpath):,} bytes")
+    os.makedirs(outdir, exist_ok=True)
+
+    # Save the data file
+    npz_path = os.path.join(outdir, 'key_record.npz')
+    save_key_record(key, npz_path)
+    print(f"  Key data saved: {npz_path}")
+
+    # Render and save the audio version
+    print(f"\n  Rendering key as audio (what the vinyl record sounded like)...")
+    sr = 22050
+    audio = key_to_audio(key, sr=sr)
+    wav_path = os.path.join(outdir, 'key_record.wav')
+    sf.write(wav_path, audio, sr)
+    print(f"  Key audio saved: {wav_path} ({len(audio)/sr:.2f}s)")
+    print()
+    print(f"  🎵 Listen to {wav_path} — this is what an eavesdropper would hear")
+    print(f"     if they played the vinyl key record on a phonograph: random noise.")
+    print(f"     There's no speech in it, no pattern — just the raw randomness")
+    print(f"     that makes the one-time pad unbreakable.")

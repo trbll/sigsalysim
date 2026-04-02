@@ -69,7 +69,7 @@ source venv/bin/activate
 python scripts/run_pipeline.py
 ```
 
-This generates **17 audio files** in `output/` and prints detailed diagnostics explaining the quantitative "why" behind each stage.
+This generates **18 audio files** in `output/` and prints detailed diagnostics explaining the quantitative "why" behind each stage.
 
 ### Use Your Own Audio
 
@@ -81,49 +81,121 @@ Any mono or stereo WAV file will work. The pipeline normalizes and processes it 
 
 ### Run Individual Modules
 
-Each module works standalone for focused exploration:
+Each module works standalone for focused exploration. Run any module with no arguments to see its full help text.
+
+#### Telephone Line Simulation
 
 ```bash
-# Telephone line simulation
-python -m sigsaly.telephone input/sample_speech.wav output/phone.wav
-python -m sigsaly.telephone input/sample_speech.wav output/noisy.wav 20  # noisier line
+python -m sigsaly.telephone <input.wav> <output.wav> [snr_db]
+```
 
-# A-3 scrambler
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `input.wav` | Source audio file | *(required)* |
+| `output.wav` | Output audio file | *(required)* |
+| `snr_db` | Signal-to-noise ratio in decibels. Lower = noisier. **40** = clean modern line, **30** = typical 1940s domestic, **25** = 1940s transatlantic, **20** = poor connection, **10** = barely usable | `30` |
+
+```bash
+python -m sigsaly.telephone input/sample_speech.wav output/phone.wav         # standard line
+python -m sigsaly.telephone input/sample_speech.wav output/noisy.wav 20      # poor connection
+python -m sigsaly.telephone input/sample_speech.wav output/terrible.wav 10   # barely usable
+```
+
+#### A-3 Frequency Inversion Scrambler
+
+```bash
+python -m sigsaly.scrambler <mode> <input.wav> <output.wav> [carrier_freq]
+```
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `mode` | One of: **scramble** (apply A-3), **unscramble** (reverse with known carrier), **crack** (automated spectral analysis attack) | *(required)* |
+| `input.wav` | Source audio file | *(required)* |
+| `output.wav` | Output audio file | *(required)* |
+| `carrier_freq` | Carrier frequency in Hz (the "secret key"). Only used in scramble/unscramble modes. The A-3 used values around 2000-3000 Hz. | `2000` |
+
+```bash
+# Scramble with a specific carrier frequency
 python -m sigsaly.scrambler scramble input/sample_speech.wav output/scrambled.wav 2000
+
+# Unscramble (you must know the carrier frequency)
+python -m sigsaly.scrambler unscramble output/scrambled.wav output/recovered.wav 2000
+
+# Automated cracking — finds the carrier frequency and recovers speech
 python -m sigsaly.scrambler crack output/scrambled.wav output/cracked.wav
+```
 
-# Vocoder (analysis + resynthesis)
+#### Channel Vocoder
+
+```bash
+python -m sigsaly.vocoder <input.wav> <output.wav>
+```
+
+| Parameter | Description |
+|-----------|-------------|
+| `input.wav` | Source speech audio |
+| `output.wav` | Vocoder-resynthesized output |
+
+```bash
 python -m sigsaly.vocoder input/sample_speech.wav output/vocoded.wav
+```
 
-# Key generation
-python -m sigsaly.key_generation 30  # 30 seconds of key material
+The output sounds robotic but intelligible — 10 frequency bands, 6 amplitude levels, 50 frames/sec.
 
-# Encryption demo (mod-6 arithmetic table)
+#### Key Record Generation
+
+```bash
+python -m sigsaly.key_generation <duration_seconds> [seed] [output_dir]
+```
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `duration_seconds` | Length of key material in seconds. Real SIGSALY records held 12 minutes (720s). | *(required)* |
+| `seed` | Random seed for reproducibility. Use `None` for true randomness. **Warning**: seeds make keys predictable — real SIGSALY used hardware noise. | `None` |
+| `output_dir` | Directory for output files | `output/` |
+
+Generates two files:
+- **`key_record.npz`** — the key data (for encryption/decryption)
+- **`key_record.wav`** — the key as **audible audio**: what the vinyl record sounded like if you played it on a phonograph. It's noise — because that's literally what was recorded on the real SIGSALY key records (mercury-vapor tube thermal noise). Listening to it helps you understand why subtracting random noise from speech destroys all structure.
+
+```bash
+python -m sigsaly.key_generation 30              # 30s of key material
+python -m sigsaly.key_generation 10 42           # reproducible with seed
+python -m sigsaly.key_generation 720             # full 12-minute record (like real SIGSALY)
+```
+
+#### Encryption Demo
+
+```bash
 python -m sigsaly.encryption
 ```
+
+No parameters — prints the complete mod-6 arithmetic table showing every possible encryption/decryption combination. Useful for understanding the one-time pad math.
 
 ## Output Files — Listening Guide
 
 | Stage | Files | What You'll Hear |
 |-------|-------|-----------------|
-| **0 — Original** | `0a_original.wav`, `0b_original_telephone.wav` | Clean speech, then the same voice through a 1940s phone line (bandlimited, noisy) |
+| **0 — Original** | `0a_original.wav`, `0b_..._telephone.wav` | Clean speech, then the same voice through a 1940s phone line (bandlimited, noisy) |
 | **1 — A-3 Scrambler** | `1a_a3_scrambled.wav`, `1b_..._telephone.wav` | Garbled alien-sounding audio. Sounds secure... |
 | **1 — A-3 Cracked** | `1c_a3_cracked.wav`, `1d_..._telephone.wav` | ...but spectral analysis recovers the speech! The "secret" was just one number. |
 | **2 — Vocoder** | `2a_vocoder.wav`, `2b_..._telephone.wav` | Robotic but intelligible — the characteristic "SIGSALY sound" |
 | **3 — SIGSALY Encrypted** | `3a_sigsaly_encrypted.wav`, `3b_..._telephone.wav` | Pure noise. No speech structure whatsoever. |
 | **3 — SIGSALY Decrypted** | `3c_sigsaly_decrypted.wav`, `3d_..._telephone.wav` | Vocoded speech restored — decryption works! |
+| **3 — Key Record** | `3e_key_record_audio.wav` | What the vinyl key record sounded like — pure random noise from mercury-vapor tubes. This is the physical one-time pad. |
 | **4 — Crack Attempt** | `4a_sigsaly_a3crack_attempt.wav` | A-3 cracking method applied to SIGSALY — still noise. Spectral analysis fails. |
 | **5 — Clock Desync** | `5a_desync_1frame.wav` ... `5c_desync_25frames.wav` | Even 20ms of turntable misalignment = complete garbage |
 
 ## Key Diagnostic Outputs
 
-The pipeline and individual modules print quantitative insights:
+The pipeline and individual modules print quantitative insights. Run any module with the `verbose=True` flag (enabled by default in CLI mode) to see these:
 
 - **Compression ratio**: The vocoder achieves 37:1 compression (22,050 values/sec → 600 values/sec)
 - **Quantization distribution**: How the 6 levels (0–5) are distributed across band amplitudes, showing companding's effect
 - **Encryption uniformity**: Encrypted values should be uniformly distributed (chi-squared test). Correlation between original and encrypted should be ~0.0.
 - **Desync accuracy**: With perfect sync, 100% of values match. With ANY offset, accuracy drops to ~16.7% (= 1/6, random chance). This is the one-time pad's all-or-nothing property.
 - **A-3 cracking confidence**: The spectral analysis cracker reports its top candidates and a confidence ratio. High confidence on A-3 audio, low confidence (failure) on SIGSALY audio.
+- **Key randomness verification**: Distribution uniformity and sequential correlation checks confirm the key has no detectable patterns.
 
 ## Security Concepts Demonstrated
 
