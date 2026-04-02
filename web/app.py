@@ -34,7 +34,14 @@ DEFAULT_SAMPLE = os.path.join(PROJECT_ROOT, 'input', 'sample_speech.wav')
 @app.route('/')
 def index():
     """Render the main page (upload form, no results yet)."""
-    return render_template('index.html', results=None)
+    # Provide default sample info so the preview player works before running
+    default_info = sf.info(DEFAULT_SAMPLE)
+    default_source = {
+        'name': 'Built-in sample',
+        'duration': round(default_info.duration, 2),
+        'sr': default_info.samplerate,
+    }
+    return render_template('index.html', results=None, default_source=default_source)
 
 
 @app.route('/run', methods=['POST'])
@@ -78,7 +85,22 @@ def run_pipeline():
         return render_template('index.html', results=None,
                                error=f'Pipeline error: {e}')
 
+    # Include source name for the preview player
+    if 'audio_file' in request.files and request.files['audio_file'].filename:
+        results['source_info']['name'] = request.files['audio_file'].filename
+    else:
+        results['source_info']['name'] = 'Built-in sample'
+
     return render_template('index.html', results=results)
+
+
+@app.route('/default-sample')
+def serve_default_sample():
+    """Serve the built-in default sample audio for the preview player."""
+    return send_from_directory(
+        os.path.join(PROJECT_ROOT, 'input'), 'sample_speech.wav',
+        mimetype='audio/wav'
+    )
 
 
 @app.route('/session/<session_id>/audio/<filename>')

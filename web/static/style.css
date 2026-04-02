@@ -83,6 +83,37 @@ header p {
     font-size: 0.9rem;
 }
 
+.source-preview {
+    margin-top: 0.5rem;
+    padding: 0.75rem;
+    background: var(--accent-bg);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+}
+
+.source-preview-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+}
+
+.source-preview-label strong {
+    color: var(--accent);
+}
+
+.source-preview-label span {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-family: var(--mono);
+}
+
+.source-preview audio {
+    width: 100%;
+    display: block;
+}
+
 .params-section {
     display: flex;
     flex-direction: column;

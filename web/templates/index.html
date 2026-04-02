@@ -24,10 +24,34 @@
     <div class="controls-grid">
         <div class="upload-section">
             <label><strong>Audio Source</strong></label>
-            <input type="file" name="audio_file" accept=".wav,.aiff,.flac,.ogg,.mp3">
+            <input type="file" name="audio_file" accept=".wav,.aiff,.flac,.ogg,.mp3"
+                   id="audio-upload" onchange="previewUploadedAudio(this)">
             <span style="font-size: 0.85rem; color: var(--text-muted);">
                 Upload a WAV file, or leave empty to use the built-in sample.
             </span>
+
+            <!-- Source audio preview player — always visible -->
+            <div class="source-preview">
+                <div class="source-preview-label">
+                    {% if results %}
+                        <strong>{{ results.source_info.name }}</strong>
+                        <span>{{ results.source_info.duration }}s · {{ results.source_info.sr }} Hz</span>
+                    {% elif default_source %}
+                        <strong>{{ default_source.name }}</strong>
+                        <span>{{ default_source.duration }}s · {{ default_source.sr }} Hz</span>
+                    {% endif %}
+                </div>
+                {% if results %}
+                <audio controls preload="auto" id="source-player">
+                    <source src="{{ url_for('serve_audio', session_id=results.session_id, filename='0a_original.wav') }}"
+                            type="audio/wav">
+                </audio>
+                {% else %}
+                <audio controls preload="auto" id="source-player">
+                    <source src="{{ url_for('serve_default_sample') }}" type="audio/wav">
+                </audio>
+                {% endif %}
+            </div>
         </div>
 
         <div class="params-section">
@@ -150,6 +174,22 @@
 <script>
 function showLoading() {
     document.getElementById('loading').classList.add('active');
+}
+
+function previewUploadedAudio(input) {
+    // When a user selects a file, update the preview player to play it locally
+    if (input.files && input.files[0]) {
+        var file = input.files[0];
+        var url = URL.createObjectURL(file);
+        var player = document.getElementById('source-player');
+        player.src = url;
+        player.load();
+        // Update the label
+        var label = document.querySelector('.source-preview-label strong');
+        if (label) label.textContent = file.name;
+        var meta = document.querySelector('.source-preview-label span');
+        if (meta) meta.textContent = '(uploaded, preview below)';
+    }
 }
 </script>
 
