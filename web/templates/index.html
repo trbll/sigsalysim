@@ -27,7 +27,7 @@
             <input type="file" name="audio_file" accept=".wav,.aiff,.flac,.ogg,.mp3"
                    id="audio-upload" onchange="previewUploadedAudio(this)">
             <span style="font-size: 0.85rem; color: var(--text-muted);">
-                Upload a WAV file, or leave empty to use the built-in sample.
+                Upload a WAV file (max {{ max_duration }}s), or leave empty to use the built-in sample.
             </span>
 
             <!-- Source audio preview player — always visible -->

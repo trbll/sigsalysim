@@ -53,6 +53,7 @@ sigsalysim/
 │   └── static/style.css        # Styling
 ├── scripts/
 │   └── run_pipeline.py         # v1 CLI pipeline (all stages)
+├── serve.sh                    # Multi-user server launcher (gunicorn)
 ├── venv/                       # Python virtual environment
 └── README.md
 ```
@@ -78,15 +79,28 @@ pip install numpy scipy soundfile matplotlib flask
 
 ### v2: Web Dashboard (recommended)
 
+**Single user (local development / personal exploration):**
+
 ```bash
 source venv/bin/activate
 python web/app.py                     # starts on http://127.0.0.1:3001
 python web/app.py --port 8080         # custom port
 ```
 
-Open the URL in your browser. Upload a WAV file (or use the built-in sample), adjust parameters with sliders, and click **Run Pipeline**. All 17 audio outputs appear with spectrograms, audio players, and diagnostic text.
+**Multi-user (classroom — students connect to your machine):**
+
+```bash
+pip install gunicorn                  # one-time setup
+./serve.sh                            # 8 workers on port 3001
+./serve.sh --workers 12 --port 8080   # custom
+```
+
+Students connect to `http://your-hostname.local:3001` (or your IP address). Each worker handles one pipeline run at a time — with 8 workers, 8 students can process simultaneously; additional requests queue automatically. See `serve.sh` for recommended worker counts by class size.
+
+Open the URL in your browser. Upload a WAV file (or use the built-in sample), adjust parameters with sliders, and click **Run Pipeline**. All 17 audio outputs appear with spectrograms, audio players, and diagnostic text. Uploaded audio is limited to 120 seconds.
 
 **Features:**
+- Source audio preview player (always visible for A/B comparison)
 - Spectrogram visualizations for every output (visual comparison is very compelling)
 - Parameter sliders: telephone SNR (10-50 dB), A-3 carrier frequency (500-5000 Hz), desync offset (1-100 frames)
 - Grouped by stage with educational descriptions and quantitative diagnostics
