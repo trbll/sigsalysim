@@ -6,7 +6,7 @@
     <title>SIGSALY Simulator</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
+<body data-theme="{{ theme or 'default' }}">
 
 <header>
     <h1><span>SIGSALY</span> Simulator</h1>
@@ -60,6 +60,7 @@
 <!-- ── Controls Panel ────────────────────────────────── -->
 <form action="{{ url_for('run_pipeline') }}" method="post" enctype="multipart/form-data"
       class="controls" id="pipeline-form">
+    <input type="hidden" name="theme" value="{{ theme or 'default' }}">
     <h2>Input &amp; Parameters</h2>
     <div class="controls-grid">
         <div class="upload-section">
@@ -172,7 +173,7 @@
         <span class="stage-number">{{ stage.id }}</span>
         <h2>{{ stage.title }}</h2>
     </div>
-    <p class="stage-description">{{ stage.description }}</p>
+    <p class="stage-description">{{ stage.description | safe }}</p>
 
     {% if stage.output_groups is defined and stage.output_groups %}
     <!-- Grouped outputs (e.g., sent vs recovered) -->
@@ -257,6 +258,22 @@
     </div>
 </section>
 
+<!-- ── Modern Security ────────────────────────────────── -->
+{% if results and results.modern_security %}
+<section class="stage" id="modern-security">
+    <div class="stage-header">
+        <span class="stage-number" style="font-size: 0.7rem;">&#x2192;</span>
+        <h2>{{ results.modern_security.title }}</h2>
+    </div>
+    <p class="stage-description">{{ results.modern_security.intro | safe }}</p>
+
+    {% for section in results.modern_security.sections %}
+    <h4 class="output-group-heading">{{ section.heading }}</h4>
+    <div class="modern-security-text">{{ section.text | safe }}</div>
+    {% endfor %}
+</section>
+{% endif %}
+
 {% endif %}
 
 <!-- ── References ────────────────────────────────────── -->
@@ -303,6 +320,37 @@ document.addEventListener('play', function(e) {
         });
     }
 }, true);
+
+// Position tooltips using fixed positioning so they're never clipped
+// by parent overflow:hidden. Calculates position on mouseenter.
+document.querySelectorAll('.tooltip').forEach(function(tip) {
+    tip.addEventListener('mouseenter', function() {
+        var tt = this.querySelector('.tooltip-text');
+        if (!tt) return;
+        var rect = this.getBoundingClientRect();
+        var ttWidth = 300; // matches CSS width
+        // Position above the element
+        var top = rect.top - 8;
+        var left = rect.left;
+        // Keep tooltip on screen horizontally
+        if (left + ttWidth > window.innerWidth - 16) {
+            left = window.innerWidth - ttWidth - 16;
+        }
+        if (left < 8) left = 8;
+        tt.style.left = left + 'px';
+        // Place above; if not enough room, place below
+        tt.style.top = 'auto';
+        tt.style.bottom = 'auto';
+        var ttHeight = tt.offsetHeight || 120;
+        if (top - ttHeight < 8) {
+            // Not enough room above, place below
+            tt.style.top = (rect.bottom + 8) + 'px';
+            tt.querySelector('::after') // can't style pseudo via JS, but it's fine
+        } else {
+            tt.style.top = (top - ttHeight) + 'px';
+        }
+    });
+});
 </script>
 
 </body>

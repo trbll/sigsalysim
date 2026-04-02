@@ -35,6 +35,8 @@ from web.pipeline import run_web_pipeline, cleanup_old_sessions
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB upload limit
 
+VALID_THEMES = {'default', 'codex'}
+
 # Maximum audio duration in seconds. Longer clips take proportionally longer
 # to process (vocoder analysis, cracking search, spectrogram generation).
 # 120s is generous for educational demos — most speech clips are 5-30s.
@@ -49,6 +51,11 @@ DEFAULT_RESULTS_JSON = os.path.join(DEFAULT_OUTPUT_DIR, 'results.json')
 
 # Special session_id used for pre-computed defaults
 DEFAULT_SESSION_ID = '_default'
+
+
+def _normalize_theme(theme):
+    """Limit theme selection to the supported UI variants."""
+    return theme if theme in VALID_THEMES else 'default'
 
 
 def _load_default_results():
@@ -70,13 +77,15 @@ def _load_default_results():
 @app.route('/')
 def index():
     """Render the main page with pre-computed default results if available."""
+    theme = _normalize_theme(request.args.get('theme'))
     default_results = _load_default_results()
 
     if default_results:
         # Serve the page with pre-computed results — instant load
         return render_template('index.html', results=default_results,
                                max_duration=MAX_AUDIO_DURATION,
-                               is_default=True)
+                               is_default=True,
+                               theme=theme)
     else:
         # No pre-computed results — show empty form with preview player
         default_info = sf.info(DEFAULT_SAMPLE)
@@ -87,12 +96,14 @@ def index():
         }
         return render_template('index.html', results=None,
                                default_source=default_source,
-                               max_duration=MAX_AUDIO_DURATION)
+                               max_duration=MAX_AUDIO_DURATION,
+                               theme=theme)
 
 
 @app.route('/run', methods=['POST'])
 def run_pipeline():
     """Accept audio input, run the SIGSALY pipeline, return results."""
+    theme = _normalize_theme(request.form.get('theme') or request.args.get('theme'))
     cleanup_old_sessions()
 
     # Determine input audio source
@@ -112,7 +123,8 @@ def run_pipeline():
         except Exception as e:
             return render_template('index.html', results=None,
                                    error=f'Invalid audio file: {e}',
-                                   max_duration=MAX_AUDIO_DURATION)
+                                   max_duration=MAX_AUDIO_DURATION,
+                                   theme=theme)
 
         # Enforce duration limit
         if info.duration > MAX_AUDIO_DURATION:
@@ -121,7 +133,8 @@ def run_pipeline():
                                    error=(f'Audio too long: {info.duration:.1f}s '
                                           f'(maximum {MAX_AUDIO_DURATION}s). '
                                           f'Please trim your audio and try again.'),
-                                   max_duration=MAX_AUDIO_DURATION)
+                                   max_duration=MAX_AUDIO_DURATION,
+                                   theme=theme)
 
         input_path = tmp_input
         source_name = uploaded.filename
@@ -150,7 +163,8 @@ def run_pipeline():
                 # Params match — serve pre-computed results instantly
                 return render_template('index.html', results=default_results,
                                        max_duration=MAX_AUDIO_DURATION,
-                                       is_default=True)
+                                       is_default=True,
+                                       theme=theme)
 
     # Run the pipeline (custom audio or changed params)
     try:
@@ -158,12 +172,14 @@ def run_pipeline():
     except Exception as e:
         return render_template('index.html', results=None,
                                error=f'Pipeline error: {e}',
-                               max_duration=MAX_AUDIO_DURATION)
+                               max_duration=MAX_AUDIO_DURATION,
+                               theme=theme)
 
     results['source_info']['name'] = source_name
 
     return render_template('index.html', results=results,
-                           max_duration=MAX_AUDIO_DURATION)
+                           max_duration=MAX_AUDIO_DURATION,
+                           theme=theme)
 
 
 @app.route('/default-sample')

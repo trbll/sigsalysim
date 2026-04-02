@@ -84,6 +84,12 @@ def _telephone(signal, sr, snr_db=28):
     return simulate_telephone_line(signal, sr, snr_db=snr_db)
 
 
+def _tip(term, explanation):
+    """Create an HTML tooltip span for use in stage descriptions."""
+    return (f'<span class="tooltip">{term}'
+            f'<span class="tooltip-text">{explanation}</span></span>')
+
+
 # ============================================================================
 # MAIN PIPELINE
 # ============================================================================
@@ -127,10 +133,21 @@ def run_web_pipeline(input_wav_path, params=None):
         'title': 'The Problem: Open Lines',
         'description': (
             'During WWII, Allied leaders needed to coordinate across the Atlantic '
-            '-- but long-distance phone calls traveled over radio links and cables that '
-            'anyone could tap. Here\'s the original voice, and what it sounded like '
-            'after traveling through a 1940s phone line: bandlimited to 300-3400 Hz, '
-            f'degraded by tube amplifier distortion, and buried under noise (SNR = {snr_db} dB). '
+            '-- but long-distance phone calls traveled over '
+            + _tip('radio links', 'Transatlantic calls used HF (high-frequency) radio '
+                   'relays bounced off the ionosphere. These signals could be intercepted '
+                   'by anyone with a radio receiver tuned to the right frequency.')
+            + ' and cables that anyone could tap. Here\'s the original voice, and what it sounded like '
+            'after traveling through a 1940s phone line: '
+            + _tip('bandlimited', 'A bandpass filter removes all frequencies outside a range. '
+                   'Telephone lines only carried 300-3400 Hz -- enough for speech intelligibility, '
+                   'but it strips out the deep bass and crisp high frequencies, making voices sound "thin."')
+            + ' to 300-3400 Hz, '
+            'degraded by '
+            + _tip('tube amplifier distortion', 'Long-distance calls passed through chains of vacuum tube '
+                   'amplifier "repeaters" spaced along the line. Each tube adds slight nonlinear distortion -- '
+                   'loud peaks get gently compressed. Think of it like a photocopy of a photocopy.')
+            + f', and buried under noise (SNR = {snr_db} dB). '
             'Distorted, but perfectly intelligible. An eavesdropper on the line hears everything.'
         ),
         'outputs': [
@@ -170,15 +187,33 @@ def run_web_pipeline(input_wav_path, params=None):
         'id': 1,
         'title': 'First Attempt: A-3 Scrambler',
         'description': (
-            'The Allies\' first solution was the A-3 scrambler -- flip the audio spectrum '
-            f'around a secret carrier frequency ({carrier_freq} Hz) so low sounds become high '
+            'The Allies\' first solution was the A-3 scrambler -- '
+            + _tip('frequency inversion', 'Multiplying a signal by a cosine wave at the carrier frequency '
+                   'flips the spectrum: a 500 Hz tone becomes (carrier - 500) Hz. It\'s like looking at '
+                   'a photo negative -- everything is reversed, but the structure is preserved.')
+            + f' around a secret carrier frequency ({carrier_freq} Hz) so low sounds become high '
             'and vice versa. Listen to the scrambled audio: it sounds like garbled alien noise. '
             'Surely no one could understand that? '
             'But the Germans could. By 1941, they were routinely cracking A-3 calls using '
-            'spectral analysis. The "secret" was a single number (the carrier frequency), and '
-            'speech has such distinctive spectral patterns that finding it was trivial. '
-            'Listen to the cracked output -- the speech is recovered. The A-3 was security through '
-            'obscurity, and it had failed. The Allies needed something fundamentally different.'
+            + _tip('spectral analysis', 'Examining the frequency content of a signal over time. '
+                   'Speech has a very distinctive spectral "fingerprint" -- most energy below 1000 Hz, '
+                   'clear formant peaks from vowel resonances, and a 1/f energy rolloff. These patterns '
+                   'survive frequency inversion (just mirrored), making it easy to detect.')
+            + '. The "secret" was a single number (the carrier frequency) -- '
+            'think of it like a combination lock with only one dial. '
+            'Speech has such distinctive '
+            + _tip('formant patterns', 'Formants are resonant frequencies of the vocal tract. '
+                   'Different vowels have different formant patterns (e.g., "ee" has formants around '
+                   '270 and 2300 Hz, "ah" around 730 and 1090 Hz). These patterns create recognizable '
+                   'peaks in the spectrogram that are visible even after frequency inversion.')
+            + ' that finding it was trivial. '
+            'Listen to the cracked output -- the speech is recovered. The A-3 was '
+            + _tip('security through obscurity', 'A system that relies on keeping its method secret '
+                   'rather than on mathematical guarantees. If the attacker learns how the system works '
+                   '(which they always eventually do), the security evaporates. Modern cryptography '
+                   'follows Kerckhoffs\'s principle: the system should be secure even if everything '
+                   'about it is public knowledge, except the key.')
+            + ', and it had failed. The Allies needed something fundamentally different.'
         ),
         'output_groups': [
             {
@@ -208,9 +243,17 @@ def run_web_pipeline(input_wav_path, params=None):
                 f'Top candidates: {", ".join(f"{f:.0f} Hz" for f, _ in sorted_scores)}\n'
                 f'Correlation (original vs scrambled): {corr_scrambled}\n'
                 f'Correlation (original vs cracked): {corr_cracked}\n'
-                f'\nThe cracker finds the carrier by trying different frequencies\n'
-                f'and scoring how "speech-like" each result sounds (low spectral\n'
-                f'centroid + high variance = speech). One parameter to guess.'
+                f'\nHow the Germans actually did it:\n'
+                f'  The Germans operated dedicated listening stations (notably at\n'
+                f'  Eindhoven, Netherlands). Trained operators recorded scrambled calls,\n'
+                f'  then swept a carrier frequency dial while watching the output on a\n'
+                f'  spectrum analyzer. When speech-like patterns appeared, they fine-tuned\n'
+                f'  and listened. A skilled operator could crack a call in minutes.\n'
+                f'\n'
+                f'  Our automated cracker simulates this: it tries {len(sorted_scores)*10} carrier\n'
+                f'  frequencies and scores each for speech-likeness (low spectral centroid\n'
+                f'  + high spectral variance = speech). The exact frequency doesn\'t need\n'
+                f'  to match perfectly -- close enough recovers intelligible speech.'
             ),
         }
     })
@@ -235,12 +278,33 @@ def run_web_pipeline(input_wav_path, params=None):
         'id': 2,
         'title': 'The Key Insight: Digitize First',
         'description': (
-            'The A-3 failed because it scrambled the analog waveform -- the spectral '
-            'shape of speech survived the transformation. SIGSALY\'s breakthrough was to '
-            'first DIGITIZE the speech using a vocoder ("voice coder"). The vocoder '
-            f'splits audio into {NUM_BANDS} frequency bands and measures the energy in each, '
-            f'{FRAME_RATE} times per second. Each measurement is quantized to just '
-            f'{NUM_LEVELS} discrete levels (0-5). The result sounds robotic but is '
+            'The A-3 failed because it scrambled the '
+            + _tip('analog waveform', 'A continuous signal -- the raw audio wave with infinite '
+                   'possible amplitude values at each instant. You can\'t do modular arithmetic '
+                   'on a continuous wave. Digitization converts it to discrete numbers.')
+            + ' -- the spectral shape of speech survived the transformation. SIGSALY\'s breakthrough was to '
+            'first DIGITIZE the speech using a '
+            + _tip('vocoder', '"Voice coder" -- invented by Homer Dudley at Bell Labs in 1939. '
+                   'It models speech as a source (vocal cords vibrating or turbulent air) filtered '
+                   'through a shape (the vocal tract). By capturing just the filter shape and source '
+                   'parameters, it compresses speech dramatically.')
+            + ' ("voice coder"). The vocoder '
+            f'splits audio into {NUM_BANDS} '
+            + _tip('frequency bands', 'Like an equalizer on a stereo: each band captures the energy '
+                   'in a slice of the frequency spectrum. Band 1 covers 250-500 Hz (deep vowel sounds), '
+                   'band 10 covers 2700-2950 Hz (crisp consonants like "s" and "t"). Together they '
+                   'capture the spectral "shape" of speech.')
+            + f' and measures the energy in each, {FRAME_RATE} times per second. Each measurement is '
+            + _tip('quantized', 'Rounding a continuous value to the nearest discrete level. Like '
+                   'rounding 3.7 to 4. With only 6 levels, each step is coarse (~4.3 dB), which '
+                   'is why vocoded speech sounds "robotic." But 6 levels is enough for intelligibility '
+                   'and -- critically -- small enough for modular arithmetic encryption.')
+            + f' to just {NUM_LEVELS} discrete levels (0-5) using '
+            + _tip('companding', 'COMpressing + exPANDING: a nonlinear quantization scheme that gives '
+                   'finer resolution to quiet signals (where human hearing is most sensitive) and coarser '
+                   'resolution to loud signals. The same principle used in telephone PCM systems '
+                   '(mu-law in North America, A-law in Europe).')
+            + '. The result sounds robotic but is '
             'perfectly intelligible -- and crucially, it\'s now a stream of small integers '
             'that can be encrypted with mathematics.'
         ),
@@ -286,15 +350,34 @@ def run_web_pipeline(input_wav_path, params=None):
         'id': 3,
         'title': 'The Key: Vinyl Records of Random Noise',
         'description': (
-            'To encrypt the vocoder\'s integer stream, SIGSALY needed a source of randomness '
-            'that was truly unpredictable. Bell Labs generated random noise using mercury-vapor '
-            'vacuum tubes -- the thermal chaos of hot ionized gas, sampled and quantized into '
-            'values from 0 to 5. This noise was recorded onto vinyl phonograph records. Each '
-            'record held 12 minutes of key material. Identical copies were pressed and shipped '
+            'To encrypt the vocoder\'s integer stream, SIGSALY needed a source of '
+            + _tip('true randomness', 'Not pseudorandom (algorithmically generated, deterministic) '
+                   'but physically random -- derived from an unpredictable natural process. '
+                   'Pseudorandom generators like those in computers follow a pattern that could '
+                   'theoretically be predicted if you knew the seed. True randomness has no seed, '
+                   'no pattern, no way to predict the next value.')
+            + '. Bell Labs generated noise using '
+            + _tip('mercury-vapor vacuum tubes', 'Large glass tubes filled with mercury vapor. When '
+                   'heated, the mercury ionizes and creates a plasma. The thermal motion of ions '
+                   'produces electrical noise that is genuinely random -- governed by quantum '
+                   'mechanical processes that are fundamentally unpredictable. This was state-of-the-art '
+                   'random number generation in the 1940s.')
+            + ' -- the thermal chaos of hot ionized gas, sampled and quantized into '
+            'values from 0 to 5. This noise was recorded onto '
+            + _tip('vinyl phonograph records', 'Standard 33 1/3 RPM records, but instead of music, '
+                   'the grooves encoded random noise values. Each record held 12 minutes of key material. '
+                   'Think of it as a physical random number table -- except read by a turntable at '
+                   '50 values per second instead of by a human.')
+            + '. Identical copies were pressed and shipped '
             'by armed military courier to each terminal -- one for Washington, one for London. '
-            'Used records were destroyed immediately after the call. Listen to what a key record '
-            'sounded like: pure noise. No pattern, no structure, no information -- just randomness. '
-            'That\'s exactly what makes the encryption unbreakable.'
+            'Used records were destroyed immediately. Listen to what a key record '
+            'sounded like: pure noise. No pattern, no structure -- just randomness. '
+            'This is the physical embodiment of a '
+            + _tip('one-time pad', 'A provably unbreakable encryption scheme where each message '
+                   'value is masked by a random key value. "One-time" because each key value is used '
+                   'for exactly one message value and then discarded. Reusing key values (a "two-time pad") '
+                   'allows an attacker to cancel out the key by subtracting two ciphertexts.')
+            + '.'
         ),
         'outputs': [
             {**meta_3e, 'label': 'Key record (vinyl sound)', 'spectrogram': '3e_key_record_audio.png'},
@@ -335,12 +418,26 @@ def run_web_pipeline(input_wav_path, params=None):
         'title': 'Encryption: Vocoder + Key = Noise',
         'description': (
             'Now SIGSALY combines the two pieces. For each vocoder parameter (a number '
-            'from 0 to 5), it subtracts the corresponding key value using modular arithmetic: '
-            'encrypted = (voice - key) mod 6. For example, if the voice level is 3 and the '
+            'from 0 to 5), it subtracts the corresponding key value using '
+            + _tip('modular arithmetic', 'Arithmetic that "wraps around" like a clock. Mod 6 means '
+                   'the result always stays in the range 0-5. If you go below 0, you wrap to the top: '
+                   '-1 mod 6 = 5, -2 mod 6 = 4. Think of a clock with 6 hours instead of 12. '
+                   'This is sometimes called "clock arithmetic."')
+            + ': encrypted = (voice - key) mod 6. For example, if the voice level is 3 and the '
             'key value is 5: (3 - 5) mod 6 = -2 mod 6 = 4. The encrypted value (4) reveals '
-            'nothing about the original (3) because the key (5) is random and unknown to the '
-            'eavesdropper. Listen to the result -- the encrypted output is pure noise. Compare '
-            'its spectrogram to the original: no speech structure remains. This is what '
+            'nothing about the original (3) because the key (5) is '
+            + _tip('uniformly random', 'Each value 0-5 is equally likely (probability 1/6). '
+                   'This means the encrypted value is also uniformly distributed, regardless '
+                   'of what the original speech value was. There is no statistical pattern '
+                   'for an attacker to exploit -- the encrypted stream looks identical whether '
+                   'the speaker said "hello" or stayed silent.')
+            + ' and unknown to the eavesdropper. Listen to the result -- the encrypted output is '
+            'pure noise. Compare its '
+            + _tip('spectrogram', 'A visual representation of frequency content over time. The '
+                   'x-axis is time, y-axis is frequency, and color intensity is energy. Speech shows '
+                   'clear horizontal bands (formants) and vertical gaps (silences). Encrypted audio '
+                   'shows uniform color -- no structure at all.')
+            + ' to the original: no speech structure remains. This is what '
             'travels over the phone line.'
         ),
         'outputs': [
@@ -381,12 +478,25 @@ def run_web_pipeline(input_wav_path, params=None):
         'id': 5,
         'title': 'Decryption: Recovering the Voice',
         'description': (
-            'At the receiving terminal in London, the identical copy of the vinyl key record '
-            'plays in perfect synchronization. Decryption is simply the inverse operation: '
-            'add the key value back. decrypted = (encrypted + key) mod 6. Continuing the '
+            'At the receiving terminal in London, the '
+            + _tip('identical copy', 'Bit-for-bit identical. Both records were pressed from the '
+                   'same master at the manufacturing facility. Any difference between the sender\'s '
+                   'and receiver\'s key -- even a single value off -- would cause that frame to '
+                   'decrypt incorrectly. This is why key distribution was a military-grade logistics operation.')
+            + ' of the vinyl key record plays in perfect synchronization. Decryption is '
+            'simply the '
+            + _tip('inverse operation', 'Encryption subtracts the key (mod 6), so decryption adds '
+                   'it back (mod 6). Subtraction and addition are inverses in modular arithmetic, '
+                   'just like in regular math: if x - 5 = 4, then 4 + 5 = x. The modular wrap-around '
+                   'doesn\'t change this -- (3 - 5) mod 6 = 4, and (4 + 5) mod 6 = 3.')
+            + ': add the key value back. decrypted = (encrypted + key) mod 6. Continuing the '
             'example: (4 + 5) mod 6 = 9 mod 6 = 3 -- the original value is recovered '
-            'exactly. The decrypted parameters are fed into the vocoder\'s resynthesizer, '
-            'which reconstructs audible speech. Listen: the voice is back, with the '
+            'exactly. The decrypted parameters are fed into the vocoder\'s '
+            + _tip('resynthesizer', 'The decoder half of the vocoder. It takes the numerical '
+                   'parameters (band amplitudes + pitch) and generates audible audio: a pulse train '
+                   '(for voiced sounds like vowels) or white noise (for unvoiced sounds like "s"), '
+                   'filtered through the 10 frequency bands at the specified amplitudes.')
+            + ', which reconstructs audible speech. Listen: the voice is back, with the '
             'characteristic robotic quality of vocoded audio. This is what Churchill and '
             'Roosevelt actually heard during their secure wartime conversations.'
         ),
@@ -423,11 +533,29 @@ def run_web_pipeline(input_wav_path, params=None):
             'What if the Germans applied their spectral analysis technique to SIGSALY? '
             'Listen: it fails completely. With A-3, the spectral shape of speech survived '
             'the transformation (just mirrored), so there was a pattern to find. With the '
-            'one-time pad, each encrypted value is statistically independent of the original -- '
+            'one-time pad, each encrypted value is '
+            + _tip('statistically independent', 'Knowing one encrypted value tells you nothing '
+                   'about the next one, or about the original value. This is because each key value '
+                   'is independently random. Compare to A-3, where the relationship between '
+                   'adjacent frequencies is preserved -- that\'s the pattern the Germans exploited.')
+            + ' of the original -- '
             f'the key has {key_n_values:,} independently random values where A-3 had just one '
-            'secret number. Claude Shannon proved in 1949 that a one-time pad achieves '
-            '"perfect secrecy": knowing the ciphertext tells you literally nothing about '
-            'the message, even with infinite computing power.'
+            'secret number. '
+            + _tip('Claude Shannon', 'The father of information theory. His 1949 paper '
+                   '"Communication Theory of Secrecy Systems" laid the mathematical foundations '
+                   'of cryptography. He proved that perfect secrecy requires a key at least as '
+                   'long as the message -- exactly what SIGSALY provides with its vinyl records.')
+            + ' proved in 1949 that a one-time pad achieves '
+            + _tip('"perfect secrecy"', 'Formally: P(message | ciphertext) = P(message). '
+                   'In plain English: seeing the encrypted output does not change your belief '
+                   'about what the original message might be. Every possible original message '
+                   'is equally consistent with the ciphertext. No algorithm, no matter how '
+                   'powerful, can narrow down the possibilities.')
+            + ': knowing the '
+            + _tip('ciphertext', 'The encrypted output -- what the eavesdropper intercepts. '
+                   'In SIGSALY, this is the stream of encrypted vocoder parameters (the noise '
+                   'you heard in Stage 4). The corresponding unencrypted data is called the "plaintext."')
+            + ' tells you literally nothing about the message, even with infinite computing power.'
         ),
         'outputs': [
             {**meta_6a, 'label': 'A-3 crack attempt (FAILS)', 'spectrogram': '6a_sigsaly_a3crack_attempt.png'},
@@ -513,17 +641,38 @@ def run_web_pipeline(input_wav_path, params=None):
         'description': (
             'The one-time pad is mathematically perfect -- but it demands perfect logistics. '
             'Both terminals must play their vinyl key records at exactly the same speed, '
-            'starting at exactly the same moment. The vocoder produces one frame every '
-            f'{frame_duration_ms:.0f} milliseconds ({FRAME_RATE} frames per second). If the '
-            'receiver\'s turntable drifts by even a single frame, it reads the wrong key value '
+            'starting at exactly the same moment. The vocoder produces one '
+            + _tip('frame', 'One complete set of vocoder measurements: 10 band amplitudes + 1 pitch '
+                   '+ 1 voiced/unvoiced flag = 12 values. The vocoder produces 50 frames per second '
+                   '(one every 20 milliseconds). Each frame is independently encrypted with its '
+                   'own key values from the vinyl record.')
+            + f' every {frame_duration_ms:.0f} milliseconds ({FRAME_RATE} frames per second). If the '
+            'receiver\'s turntable '
+            + _tip('drifts', 'In practice, clocks and turntable motors are never perfectly precise. '
+                   'Crystal oscillators drift by a few parts per million. Over a 12-minute conversation, '
+                   'even 1 ppm of clock error accumulates to ~0.7ms -- approaching 1/30th of a frame. '
+                   'SIGSALY used matched precision clocks to keep drift below this threshold.')
+            + ' by even a single frame, it reads the wrong key value '
             'for that frame and every frame after it. Since adjacent key values are '
             'independently random, using the wrong one is no better than using a completely '
             'different key. Listen to what happens with increasing misalignment: 1 frame '
             f'({frame_duration_ms:.0f}ms) sounds just as destroyed as 25 frames '
             f'({25 * frame_duration_ms:.0f}ms). '
-            'This is why SIGSALY required precision time-of-day clocks at both terminals, '
+            'This is why SIGSALY required '
+            + _tip('precision time-of-day clocks', 'High-accuracy quartz crystal clocks synchronized '
+                   'to a reference time standard. Both terminals had to agree on exactly when to start '
+                   'playing each record. The clocks had to maintain synchronization over the full '
+                   '12-minute record duration without drifting by more than a fraction of a frame.')
+            + ' at both terminals, '
             'and why the complete system weighed over 50 tons and filled 40 equipment racks. '
-            'The key management problem -- manufacturing, duplicating, shipping by armed courier, '
+            'The '
+            + _tip('key management problem', 'The practical challenge of creating, copying, '
+                   'distributing, synchronizing, and destroying encryption keys. SIGSALY\'s key '
+                   'management was a massive logistics operation: manufacturing records, armed courier '
+                   'transport across the Atlantic, secure storage, precise playback timing, and '
+                   'immediate destruction after use. This same fundamental challenge exists in all '
+                   'encryption systems today -- the math may be easy, but managing the keys is hard.')
+            + ' -- manufacturing, duplicating, shipping by armed courier, '
             'synchronizing playback, and destroying used records -- was as critical to security '
             'as the mathematics.'
         ),
@@ -546,6 +695,120 @@ def run_web_pipeline(input_wav_path, params=None):
         'roundtrip_perfect': band_match and pitch_match,
     }
 
+    # ── Modern Security Context ──────────────────────────────────
+    modern_security = {
+        'title': 'From SIGSALY to Modern Cryptography',
+        'intro': (
+            'SIGSALY was a landmark -- the first system to achieve provably secure voice '
+            'communication. Many of the concepts it pioneered in 1943 remain foundational '
+            'to how we secure communications today. Here\'s what carried forward, what '
+            'changed, and how it connects to the cryptography you encounter every day.'
+        ),
+        'sections': [
+            {
+                'heading': 'What\'s Still the Same',
+                'text': (
+                    '<strong>Digitize, then encrypt.</strong> SIGSALY\'s core insight -- '
+                    'convert analog information to digital form before encrypting -- is exactly '
+                    'what every modern system does. Your phone call, text message, and web '
+                    'browsing all follow this pattern: digitize the data, then apply mathematical '
+                    'encryption to the resulting numbers.'
+                    '<br><br>'
+                    '<strong>Key management is still the hardest problem.</strong> SIGSALY needed '
+                    'armed couriers and vinyl records. Today we use '
+                    + _tip('key exchange protocols', 'Algorithms like Diffie-Hellman (1976) that '
+                           'allow two parties to establish a shared secret key over an insecure '
+                           'channel -- without ever transmitting the key itself. This solved SIGSALY\'s '
+                           'biggest logistical problem: you no longer need a physical courier.')
+                    + ', but the fundamental challenge remains: both parties need the same secret, '
+                    'and keeping secrets is hard.'
+                    '<br><br>'
+                    '<strong>Modular arithmetic is everywhere.</strong> SIGSALY\'s mod-6 operation '
+                    'is a simple case of the same mathematical structure underlying '
+                    + _tip('AES', 'Advanced Encryption Standard (2001). The most widely used symmetric '
+                           'encryption algorithm today. It operates on 128-bit blocks using modular arithmetic '
+                           'in GF(2^8) -- a finite field, which is the same concept as SIGSALY\'s mod-6 but '
+                           'with a much larger number space. AES is used in HTTPS, Wi-Fi (WPA2/3), disk '
+                           'encryption, VPNs, and virtually every secure system.')
+                    + ', '
+                    + _tip('RSA', 'Rivest-Shamir-Adleman (1977). A public-key encryption algorithm based '
+                           'on modular exponentiation with very large primes. The "public-key" innovation '
+                           'means you can encrypt a message for someone using their PUBLIC key, and only '
+                           'their PRIVATE key can decrypt it -- no shared secret needed. This would have '
+                           'eliminated SIGSALY\'s courier problem entirely.')
+                    + ', and virtually all modern cryptography.'
+                ),
+            },
+            {
+                'heading': 'What Changed',
+                'text': (
+                    '<strong>One-time pads gave way to '
+                    + _tip('symmetric-key algorithms', 'Encryption where the same key is used for both '
+                           'encryption and decryption (like SIGSALY). Modern symmetric algorithms (AES, '
+                           'ChaCha20) use short, reusable keys (128-256 bits) instead of SIGSALY\'s '
+                           'message-length one-time pads. They\'re not provably unbreakable like a true '
+                           'one-time pad, but they\'re computationally secure -- breaking them would '
+                           'take billions of years with current technology.')
+                    + '.</strong> '
+                    'SIGSALY\'s one-time pad is provably unbreakable, but it requires a key as long as '
+                    'the message -- impractical for modern internet traffic. AES uses a short key '
+                    '(128 or 256 bits) that can encrypt unlimited data. It\'s not mathematically '
+                    'perfect like a one-time pad, but breaking it would take longer than the age of '
+                    'the universe.'
+                    '<br><br>'
+                    '<strong>'
+                    + _tip('Public-key cryptography', 'Invented in the 1970s by Diffie, Hellman, Rivest, '
+                           'Shamir, and Adleman. Uses a pair of mathematically linked keys: a public key '
+                           '(shared openly) and a private key (kept secret). Anyone can encrypt with the '
+                           'public key, but only the private key holder can decrypt. This eliminated the '
+                           'need for a secure channel to exchange keys -- SIGSALY\'s biggest weakness.')
+                    + ' eliminated the courier.</strong> '
+                    'SIGSALY required physically shipping identical key records to both terminals. '
+                    'Public-key systems (RSA, elliptic curves) let two parties establish a shared '
+                    'secret over an open channel. When you visit an HTTPS website, your browser and '
+                    'the server perform a key exchange in milliseconds -- no armed courier needed.'
+                    '<br><br>'
+                    '<strong>Vocoders evolved into modern '
+                    + _tip('audio codecs', 'Algorithms that compress audio for efficient transmission. '
+                           'Modern codecs (Opus, AAC, AMR) are descendants of the vocoder concept -- '
+                           'parametric models of speech that transmit a compact representation rather '
+                           'than the raw waveform. Your phone calls use codecs that are conceptually '
+                           'similar to SIGSALY\'s vocoder, just with much higher fidelity.')
+                    + '.</strong> '
+                    'SIGSALY\'s 10-band, 6-level vocoder was the ancestor of modern speech codecs. '
+                    'Today\'s mobile phone codecs (AMR, EVS) use the same analysis-synthesis principle '
+                    'but with thousands of parameters instead of 12, producing near-transparent quality.'
+                ),
+            },
+            {
+                'heading': 'SIGSALY\'s Lasting Legacy',
+                'text': (
+                    'SIGSALY demonstrated three principles that remain central to security engineering:'
+                    '<br><br>'
+                    '<strong>1. Security must be mathematical, not obscurity-based.</strong> '
+                    'The A-3 scrambler relied on hiding its method. SIGSALY\'s security came from '
+                    'mathematical proof. This is now '
+                    + _tip('Kerckhoffs\'s principle', 'A cryptographic system should be secure even if '
+                           'everything about the system, except the key, is public knowledge. Named after '
+                           'Auguste Kerckhoffs (1883). SIGSALY embodied this: even if the enemy knew '
+                           'exactly how the system worked, they couldn\'t break it without the key records.')
+                    + ' -- the foundation of all modern cryptography.'
+                    '<br><br>'
+                    '<strong>2. The weakest link is usually not the algorithm.</strong> '
+                    'SIGSALY\'s math was perfect, but security depended on couriers, clocks, and '
+                    'record destruction. Today, most security breaches exploit implementation flaws, '
+                    'human error, or key management failures -- not the underlying algorithms.'
+                    '<br><br>'
+                    '<strong>3. Practical security requires engineering, not just theory.</strong> '
+                    '50 tons of equipment, 40 racks, 30 kilowatts, two turntables, precision clocks, '
+                    'armed couriers -- all to support an elegant mathematical idea. The gap between '
+                    '"provably secure in theory" and "secure in practice" is an engineering problem, '
+                    'and it\'s still the hardest part of building secure systems.'
+                ),
+            },
+        ],
+    }
+
     return {
         'session_id': session_id,
         'session_dir': session_dir,
@@ -558,4 +821,5 @@ def run_web_pipeline(input_wav_path, params=None):
         },
         'stages': stages,
         'summary': summary,
+        'modern_security': modern_security,
     }

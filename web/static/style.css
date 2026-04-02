@@ -15,6 +15,10 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+html {
+    background: var(--bg);
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: var(--bg);
@@ -127,10 +131,12 @@ header p {
 }
 
 .tooltip .tooltip-text {
+    /* Tooltips use position:fixed via JS so they're never clipped by
+       parent overflow:hidden. The JS sets top/left on hover. */
     visibility: hidden;
     opacity: 0;
-    position: absolute;
-    bottom: calc(100% + 8px);
+    position: fixed;
+    top: 0;
     left: 0;
     background: var(--text);
     color: #f5f5f0;
@@ -139,9 +145,10 @@ header p {
     font-size: 0.78rem;
     font-weight: 400;
     line-height: 1.5;
-    width: 300px;
+    width: min(300px, calc(100vw - 2rem));
+    max-width: calc(100vw - 2rem);
     text-align: left;
-    z-index: 100;
+    z-index: 10000;
     pointer-events: none;
     transition: opacity 0.15s, visibility 0.15s;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -201,6 +208,16 @@ footer a {
 
 footer a:hover {
     text-decoration: underline;
+}
+
+/* ── Modern Security Section ──────────────────── */
+
+.modern-security-text {
+    font-size: 0.93rem;
+    line-height: 1.7;
+    color: var(--text);
+    margin-bottom: 1.25rem;
+    padding: 0 0.25rem;
 }
 
 .footer-attribution {
@@ -564,11 +581,324 @@ footer a:hover {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── Alternate Theme: 1945 Field Manual ───────────────────────────────── */
+
+body[data-theme="codex"] {
+    --bg: #d7ccb3;
+    --surface: #f3ead2;
+    --border: #5e5641;
+    --text: #241f15;
+    --text-muted: #5a523f;
+    --accent: #4f5b38;
+    --accent-light: #68744b;
+    --accent-bg: #e4dac0;
+    --danger: #812f22;
+    --stamp: #8a2e20;
+    --paper-shadow: rgba(77, 68, 50, 0.22);
+    font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.28), rgba(255,255,255,0.02)) 0 0 / 100% 9rem no-repeat,
+        repeating-linear-gradient(0deg, rgba(94,86,65,0.032) 0, rgba(94,86,65,0.032) 1px, transparent 1px, transparent 29px),
+        linear-gradient(135deg, #d9ceb5 0%, #cec19f 48%, #dbd2bb 100%);
+    box-shadow: 0 0 0 1px rgba(94,86,65,0.18), 0 26px 60px rgba(52,44,30,0.18);
+    border-left: 1px solid rgba(94,86,65,0.3);
+    border-right: 1px solid rgba(94,86,65,0.3);
+    min-height: 100vh;
+    position: relative;
+}
+
+body[data-theme="codex"]::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(circle at 14% 12%, rgba(255,255,255,0.18), transparent 20%),
+        radial-gradient(circle at 88% 4%, rgba(255,255,255,0.12), transparent 18%);
+    opacity: 0.8;
+}
+
+body[data-theme="codex"] header {
+    text-align: left;
+    padding: 2.25rem 0 1.8rem;
+    position: relative;
+    border-bottom: 1.5px solid var(--border);
+}
+
+body[data-theme="codex"] header::before {
+    content: 'War Department Field Manual 1945 // Signal Security Training';
+    display: block;
+    margin-bottom: 0.8rem;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+}
+
+body[data-theme="codex"] header::after {
+    content: 'DECLASSIFIED';
+    position: absolute;
+    top: 0.25rem;
+    right: 0;
+    padding: 0.35rem 0.75rem;
+    color: var(--stamp);
+    border: 3px double var(--stamp);
+    background: rgba(243, 234, 210, 0.72);
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    transform: rotate(-7deg);
+    opacity: 0.82;
+}
+
+body[data-theme="codex"] header h1 {
+    font-family: var(--mono);
+    font-size: clamp(2.15rem, 4.8vw, 3.2rem);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    line-height: 1.05;
+    text-transform: uppercase;
+}
+
+body[data-theme="codex"] header h1 span {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.46em;
+    letter-spacing: 0.42em;
+    margin-bottom: 0.55rem;
+}
+
+body[data-theme="codex"] header p {
+    max-width: 44rem;
+    margin-top: 0.7rem;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+body[data-theme="codex"] .intro,
+body[data-theme="codex"] .controls,
+body[data-theme="codex"] .stage,
+body[data-theme="codex"] .summary {
+    position: relative;
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.44), rgba(255,255,255,0.05)),
+        var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 0;
+    box-shadow: 7px 7px 0 var(--paper-shadow);
+    overflow: hidden;
+}
+
+body[data-theme="codex"] .intro::after,
+body[data-theme="codex"] .controls::after,
+body[data-theme="codex"] .stage::after,
+body[data-theme="codex"] .summary::after {
+    content: '';
+    position: absolute;
+    inset: 0.55rem;
+    border: 1px solid rgba(94, 86, 65, 0.18);
+    pointer-events: none;
+}
+
+body[data-theme="codex"] .intro-content p,
+body[data-theme="codex"] .stage-description,
+body[data-theme="codex"] .summary-description {
+    color: var(--text);
+    line-height: 1.72;
+}
+
+body[data-theme="codex"] .controls h2,
+body[data-theme="codex"] .stage h2,
+body[data-theme="codex"] .summary h2,
+body[data-theme="codex"] .output-group-heading {
+    color: var(--accent);
+    font-family: var(--mono);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+body[data-theme="codex"] .stage-header {
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+body[data-theme="codex"] .stage-number {
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 2px;
+    border: 1.5px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    box-shadow: inset 0 0 0 1px rgba(79, 91, 56, 0.2);
+    font-family: var(--mono);
+}
+
+body[data-theme="codex"] .pipeline-step {
+    background: var(--accent-bg);
+    border: 1px solid var(--accent);
+    border-radius: 0;
+    box-shadow: 4px 4px 0 rgba(79, 91, 56, 0.18);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+body[data-theme="codex"] .pipeline-arrow {
+    background: var(--border);
+}
+
+body[data-theme="codex"] .pipeline-arrow::after {
+    border-left-color: var(--border);
+}
+
+body[data-theme="codex"] .tooltip {
+    color: var(--accent);
+    border-bottom-color: var(--danger);
+}
+
+body[data-theme="codex"] .tooltip .tooltip-text {
+    bottom: calc(100% + 12px);
+    background: #f5ecd6;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 0;
+    box-shadow: 6px 6px 0 rgba(82, 70, 44, 0.24);
+    width: min(320px, calc(100vw - 2rem));
+    padding: 0.82rem 0.95rem;
+    font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+}
+
+body[data-theme="codex"] .tooltip .tooltip-text::before {
+    content: 'Field Note';
+    display: block;
+    margin-bottom: 0.45rem;
+    color: var(--danger);
+    font-family: var(--mono);
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
+body[data-theme="codex"] .tooltip .tooltip-text::after {
+    top: 100%;
+    left: 1.2rem;
+    border-width: 8px;
+    border-top-color: #f5ecd6;
+}
+
+body[data-theme="codex"] .source-preview,
+body[data-theme="codex"] .source-info,
+body[data-theme="codex"] .output-card,
+body[data-theme="codex"] .summary-item {
+    background: rgba(255, 255, 255, 0.24);
+    border: 1px solid var(--border);
+    border-radius: 0;
+}
+
+body[data-theme="codex"] .source-preview-label span,
+body[data-theme="codex"] .output-meta,
+body[data-theme="codex"] .source-info {
+    color: var(--text-muted);
+}
+
+body[data-theme="codex"] .output-card {
+    box-shadow: 5px 5px 0 rgba(94, 86, 65, 0.12);
+}
+
+body[data-theme="codex"] .output-card h3 {
+    background: rgba(79, 91, 56, 0.12);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+body[data-theme="codex"] .output-card img {
+    border-bottom: 1px solid var(--border);
+    filter: sepia(0.12) saturate(0.88) contrast(1.02);
+}
+
+body[data-theme="codex"] .diagnostics {
+    background: #ece1c4;
+    color: var(--text);
+    border-left-width: 4px;
+    border-radius: 0;
+    box-shadow: inset 0 0 0 1px rgba(94, 86, 65, 0.12);
+}
+
+body[data-theme="codex"] .slider-group label,
+body[data-theme="codex"] .summary-item .label,
+body[data-theme="codex"] .slider-labels,
+body[data-theme="codex"] footer,
+body[data-theme="codex"] .loading {
+    color: var(--text-muted);
+}
+
+body[data-theme="codex"] .btn {
+    border: 1px solid var(--border);
+    border-radius: 0;
+    box-shadow: 4px 4px 0 rgba(79, 91, 56, 0.18);
+    font-family: var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+
+body[data-theme="codex"] .btn:hover {
+    transform: translate(1px, 1px);
+    box-shadow: 3px 3px 0 rgba(79, 91, 56, 0.16);
+}
+
+body[data-theme="codex"] .btn-primary {
+    color: #f7f2e5;
+}
+
+body[data-theme="codex"] .error {
+    background: rgba(129, 47, 34, 0.08);
+    border-radius: 0;
+}
+
+body[data-theme="codex"] footer {
+    border-top: 2px double var(--border);
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.04em;
+}
+
+body[data-theme="codex"] footer a {
+    color: var(--danger);
+}
+
 /* ── Responsive ───────────────────────────────── */
+
+@media (max-width: 900px) {
+    body[data-theme="codex"] header::after {
+        position: static;
+        display: inline-block;
+        margin-top: 1rem;
+        transform: rotate(-4deg);
+    }
+}
 
 @media (max-width: 700px) {
     .controls-grid { grid-template-columns: 1fr; }
     .output-grid { grid-template-columns: 1fr; }
     .summary-grid { grid-template-columns: 1fr; }
     body { padding: 1rem; }
+    body[data-theme="codex"] header::before,
+    body[data-theme="codex"] header p {
+        letter-spacing: 0.12em;
+    }
+    body[data-theme="codex"] .tooltip .tooltip-text {
+        left: auto;
+        right: 0;
+    }
 }
