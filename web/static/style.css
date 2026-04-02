@@ -196,18 +196,45 @@ footer {
     margin-top: 2.5rem;
     padding-top: 1.5rem;
     border-top: 1px solid var(--border);
-    text-align: center;
+    display: grid;
+    gap: 1rem;
+    text-align: left;
     font-size: 0.8rem;
     color: var(--text-muted);
 }
 
 footer a {
     color: var(--accent);
-    text-decoration: none;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.16em;
 }
 
 footer a:hover {
-    text-decoration: underline;
+    text-decoration-thickness: 2px;
+}
+
+.footer-block {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.footer-heading {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text);
+}
+
+.footer-link-line,
+.footer-credit-line {
+    line-height: 1.55;
+}
+
+.footer-link-sep {
+    margin: 0 0.35rem;
+    color: var(--text-muted);
 }
 
 /* ── Modern Security Section ──────────────────── */
@@ -221,7 +248,6 @@ footer a:hover {
 }
 
 .footer-attribution {
-    margin-top: 0.75rem;
     font-size: 0.75rem;
     color: var(--text-muted);
     opacity: 0.7;
@@ -435,6 +461,10 @@ footer a:hover {
     line-height: 1.5;
 }
 
+#modern-security {
+    margin-top: 1.5rem;
+}
+
 /* ── Output Group Headings ────────────────────── */
 
 .output-group-heading {
@@ -464,6 +494,14 @@ footer a:hover {
 
 .output-grid-2col {
     grid-template-columns: repeat(2, 1fr) !important;
+}
+
+.output-grid-1col {
+    grid-template-columns: 1fr !important;
+}
+
+.output-grid-3col {
+    grid-template-columns: repeat(3, 1fr) !important;
 }
 
 .output-card {
@@ -873,6 +911,12 @@ body[data-theme="codex"] footer {
     letter-spacing: 0.04em;
 }
 
+body[data-theme="codex"] .footer-heading {
+    color: var(--accent);
+    font-family: var(--mono);
+    letter-spacing: 0.16em;
+}
+
 body[data-theme="codex"] footer a {
     color: var(--danger);
 }
@@ -890,7 +934,10 @@ body[data-theme="codex"] footer a {
 
 @media (max-width: 700px) {
     .controls-grid { grid-template-columns: 1fr; }
-    .output-grid { grid-template-columns: 1fr; }
+    .output-grid,
+    .output-grid-1col,
+    .output-grid-2col,
+    .output-grid-3col { grid-template-columns: 1fr !important; }
     .summary-grid { grid-template-columns: 1fr; }
     body { padding: 1rem; }
     body[data-theme="codex"] header::before,

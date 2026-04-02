@@ -196,7 +196,7 @@
     {% endfor %}
     {% else %}
     <!-- Standard output grid -->
-    <div class="output-grid">
+    <div class="output-grid{% if stage.outputs|length == 1 %} output-grid-1col{% elif stage.outputs|length == 2 %} output-grid-2col{% elif stage.outputs|length == 3 %} output-grid-3col{% endif %}">
         {% for output in stage.outputs %}
         <div class="output-card">
             <h3>{{ output.label }}</h3>
@@ -278,16 +278,37 @@
 
 <!-- ── References ────────────────────────────────────── -->
 <footer>
-    <p class="footer-references">
-        <a href="https://en.wikipedia.org/wiki/SIGSALY" target="_blank" rel="noopener">SIGSALY -- Wikipedia</a> ·
-        <a href="https://99percentinvisible.org/episode/vox-ex-machina/" target="_blank" rel="noopener">99% Invisible: Vox Ex Machina</a> ·
-        <a href="https://pages.cs.wisc.edu/~rist/642-spring-2014/shannon-secrecy.pdf" target="_blank" rel="noopener">Shannon (1949): "Communication Theory of Secrecy Systems" (PDF)</a>
-    </p>
-    <p class="footer-attribution">
-        Created by Claude Opus 4.6 (1M) in Claude Code for Internet of Things (ECE:5550) at the University of Iowa.<br>
-        If you find any errors or issues, please let Prof. Bell know.<br>
-        v2 -- April 2, 2026
-    </p>
+    <div class="footer-block">
+        <div class="footer-heading">References</div>
+        <div class="footer-link-line">
+            <a href="{{ url_for('static', filename='references/nsa-sigsaly-brochure.pdf') }}" target="_blank" rel="noopener">NSA: The Start of the Digital Revolution: SIGSALY</a>
+        </div>
+        <div class="footer-link-line">
+            NSA Cryptologic Quarterly Vol. 34:
+            <a href="{{ url_for('static', filename='references/cryptologic-quarterly-2015-01-modular-arithmetic.pdf') }}" target="_blank" rel="noopener">How Modular Arithmetic Helped Win World War II</a>
+            <span class="footer-link-sep">|</span>
+            <a href="{{ url_for('static', filename='references/cryptologic-quarterly-2015-01-full.pdf') }}" target="_blank" rel="noopener">Full Issue</a>
+        </div>
+        <div class="footer-link-line">
+            <a href="https://pages.cs.wisc.edu/~rist/642-spring-2014/shannon-secrecy.pdf" target="_blank" rel="noopener">Shannon (1949): Communication Theory of Secrecy Systems</a>
+        </div>
+        <div class="footer-link-line">
+            99% Invisible episodes:
+            <a href="https://99percentinvisible.org/episode/vox-ex-machina/" target="_blank" rel="noopener">Vox Ex Machina</a>
+            <span class="footer-link-sep">|</span>
+            <a href="https://99percentinvisible.org/episode/numbers-stations/" target="_blank" rel="noopener">Numbers Stations</a>
+        </div>
+        <div class="footer-link-line">
+            <a href="https://en.wikipedia.org/wiki/SIGSALY" target="_blank" rel="noopener">SIGSALY overview - Wikipedia</a>
+        </div>
+    </div>
+    <div class="footer-block footer-attribution">
+        <div class="footer-heading">Credits</div>
+        <div class="footer-credit-line">Created for Internet of Things (ECE:5550) at the University of Iowa.</div>
+        <div class="footer-credit-line">Built and iterated with Claude Opus 4.6 in Claude Code and GPT-5.4 in Codex.</div>
+        <div class="footer-credit-line">If you find errors or issues, please let Prof. Bell know.</div>
+        <div class="footer-credit-line">v2 - April 2, 2026</div>
+    </div>
 </footer>
 
 <script>
