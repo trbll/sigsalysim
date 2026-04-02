@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "sigsaly-web",
+      "runtimeExecutable": "/Users/trbll/Developer/sigsalysim/venv/bin/python",
+      "runtimeArgs": ["web/app.py", "--port", "3001"],
+      "port": 3001
+    }
+  ]
+}

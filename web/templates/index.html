@@ -21,11 +21,12 @@
             so Roosevelt and Churchill could talk without the Germans listening in.
         </p>
         <p>
-            Before SIGSALY, the Allies used the <strong>A-3 scrambler</strong>, which simply flipped the audio spectrum.
-            It sounded unintelligible, but the Germans cracked it routinely using
+            Before SIGSALY, the Allies used the <strong>A-3 scrambler</strong> to obscure phone calls.
+            The real A-3 was a multi-band scrambling system; this simulator models the core idea with a simplified frequency-inversion demo.
+            Either way, the Germans cracked it routinely using
             <span class="tooltip">spectral analysis<span class="tooltip-text">Analyzing the frequency content of a signal. Speech has distinctive patterns (formant peaks, 1/f energy rolloff) that survive simple transformations like frequency inversion. If the pattern is still there, the signal can be recovered.</span></span>.
             SIGSALY replaced this with a fundamentally different approach: digitize speech with a
-            <span class="tooltip">vocoder<span class="tooltip-text">A "voice coder" that decomposes speech into 10 frequency band amplitudes + pitch, sampled 50 times per second. Invented by Homer Dudley at Bell Labs in 1939. It reduces speech to just 12 numbers per frame -- enabling encryption via arithmetic.</span></span>,
+            <span class="tooltip">vocoder<span class="tooltip-text">A "voice coder" that decomposes speech into parameters: 10 frequency band amplitudes, a pitch value, and a voiced/unvoiced flag, sampled 50 times per second. Invented by Homer Dudley at Bell Labs in 1939. The numeric parameters (10 bands + pitch) are what get encrypted via modular arithmetic.</span></span>,
             encrypt the parameters with a
             <span class="tooltip">one-time pad<span class="tooltip-text">An encryption method using random key values and modular arithmetic. Proved unbreakable by Claude Shannon in 1949 -- the ONLY encryption scheme with a mathematical proof of perfect secrecy. The catch: the key must be truly random, as long as the message, and never reused.</span></span>,
             and transmit the result. The key was stored on
@@ -68,7 +69,7 @@
             <input type="file" name="audio_file" accept=".wav,.aiff,.flac,.ogg,.mp3"
                    id="audio-upload" onchange="previewUploadedAudio(this)">
             <span style="font-size: 0.85rem; color: var(--text-muted);">
-                Upload a WAV file (max {{ max_duration }}s), or leave empty to use the built-in sample.
+                Upload an audio file (WAV, MP3, FLAC, OGG; max {{ max_duration }}s), or leave empty to use the built-in sample.
             </span>
 
             <!-- Source audio preview player -->
@@ -112,7 +113,7 @@
             </div>
             <div class="slider-group">
                 <label>
-                    <span class="tooltip">A-3 Carrier Frequency<span class="tooltip-text">The single "secret" of the A-3 scrambler. The spectrum is flipped around this frequency -- low sounds become high and vice versa. This one number is the entire key. The Germans only needed to guess it (by trying different values on a spectrum analyzer) to crack the system.</span></span>
+                    <span class="tooltip">Scrambler Carrier Frequency<span class="tooltip-text">In this simplified A-3 demo, the spectrum is flipped around a single carrier frequency. The real wartime A-3 used a more complex multi-band scheme, but the core vulnerability is the same: the spectral structure of speech survives the transformation, making it crackable by analysis.</span></span>
                     <output id="carrier-val">{{ results.params.carrier_freq if results else 2000 }}</output> Hz
                 </label>
                 <input type="range" name="carrier_freq" min="500" max="5000" step="50"

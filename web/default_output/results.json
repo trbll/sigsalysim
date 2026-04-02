@@ -1,5 +1,5 @@
 {
-  "session_id": "ad907ea884ae",
+  "session_id": "154a7aec5bd9",
   "session_dir": null,
   "source_info": {
     "samples": 252288,
@@ -47,7 +47,7 @@
     {
       "id": 1,
       "title": "First Attempt: A-3 Scrambler",
-      "description": "The Allies' first solution was the A-3 scrambler -- <span class=\"tooltip\">frequency inversion<span class=\"tooltip-text\">Multiplying a signal by a cosine wave at the carrier frequency flips the spectrum: a 500 Hz tone becomes (carrier - 500) Hz. It's like looking at a photo negative -- everything is reversed, but the structure is preserved.</span></span> around a secret carrier frequency (2000 Hz) so low sounds become high and vice versa. Listen to the scrambled audio: it sounds like garbled alien noise. Surely no one could understand that? But the Germans could. By 1941, they were routinely cracking A-3 calls using <span class=\"tooltip\">spectral analysis<span class=\"tooltip-text\">Examining the frequency content of a signal over time. Speech has a very distinctive spectral \"fingerprint\" -- most energy below 1000 Hz, clear formant peaks from vowel resonances, and a 1/f energy rolloff. These patterns survive frequency inversion (just mirrored), making it easy to detect.</span></span>. The \"secret\" was a single number (the carrier frequency) -- think of it like a combination lock with only one dial. Speech has such distinctive <span class=\"tooltip\">formant patterns<span class=\"tooltip-text\">Formants are resonant frequencies of the vocal tract. Different vowels have different formant patterns (e.g., \"ee\" has formants around 270 and 2300 Hz, \"ah\" around 730 and 1090 Hz). These patterns create recognizable peaks in the spectrogram that are visible even after frequency inversion.</span></span> that finding it was trivial. Listen to the cracked output -- the speech is recovered. The A-3 was <span class=\"tooltip\">security through obscurity<span class=\"tooltip-text\">A system that relies on keeping its method secret rather than on mathematical guarantees. If the attacker learns how the system works (which they always eventually do), the security evaporates. Modern cryptography follows Kerckhoffs's principle: the system should be secure even if everything about it is public knowledge, except the key.</span></span>, and it had failed. The Allies needed something fundamentally different.",
+      "description": "The Allies' first solution was the A-3 scrambler. The real wartime A-3 was a multi-band system; this simulator models the core idea with a simplified <span class=\"tooltip\">frequency inversion<span class=\"tooltip-text\">Multiplying a signal by a cosine wave at the carrier frequency flips the spectrum: a 500 Hz tone becomes (carrier - 500) Hz. It's like looking at a photo negative -- everything is reversed, but the structure is preserved. The real A-3 split audio into multiple bands and shuffled/inverted them, but the fundamental vulnerability was the same.</span></span> demo (carrier = 2000 Hz). Listen to the scrambled audio: it sounds like garbled alien noise. Surely no one could understand that? But the Germans could. By 1941, they were routinely cracking A-3 calls using <span class=\"tooltip\">spectral analysis<span class=\"tooltip-text\">Examining the frequency content of a signal over time. Speech has a very distinctive spectral \"fingerprint\" -- most energy below 1000 Hz, clear formant peaks from vowel resonances, and a 1/f energy rolloff. These patterns survive scrambling transformations that preserve spectral structure.</span></span>. Whether the real multi-band A-3 or our simplified one-carrier demo, the core problem is the same: the spectral structure of speech survives the transformation. Speech has such distinctive <span class=\"tooltip\">formant patterns<span class=\"tooltip-text\">Formants are resonant frequencies of the vocal tract. Different vowels have different formant patterns (e.g., \"ee\" has formants around 270 and 2300 Hz, \"ah\" around 730 and 1090 Hz). These patterns create recognizable peaks in the spectrogram that persist through any structure-preserving scramble.</span></span> that an analyst can recover the original. Listen to the cracked output -- the speech is recovered. The A-3 was <span class=\"tooltip\">security through obscurity<span class=\"tooltip-text\">A system that relies on keeping its method secret rather than on mathematical guarantees. If the attacker learns how the system works (which they always eventually do), the security evaporates. Modern cryptography follows Kerckhoffs's principle: the system should be secure even if everything about it is public knowledge, except the key.</span></span>, and it had failed. The Allies needed something fundamentally different.",
       "output_groups": [
         {
           "heading": "What the Allies sent (scrambled)",
@@ -94,7 +94,7 @@
         "carrier_freq_found": 1541,
         "correlation_scrambled": -0.0014,
         "correlation_cracked": 0.0208,
-        "text": "Carrier frequency used: 2000 Hz\nCarrier found by cracker: 1541 Hz\nTop candidates: 1541 Hz, 1745 Hz, 1663 Hz, 1622 Hz, 1500 Hz\nCorrelation (original vs scrambled): -0.0014\nCorrelation (original vs cracked): 0.0208\n\nHow the Germans actually did it:\n  The Germans operated dedicated listening stations (notably at\n  Eindhoven, Netherlands). Trained operators recorded scrambled calls,\n  then swept a carrier frequency dial while watching the output on a\n  spectrum analyzer. When speech-like patterns appeared, they fine-tuned\n  and listened. A skilled operator could crack a call in minutes.\n\n  Our automated cracker simulates this: it tries 50 carrier\n  frequencies and scores each for speech-likeness (low spectral centroid\n  + high spectral variance = speech). The exact frequency doesn't need\n  to match perfectly -- close enough recovers intelligible speech."
+        "text": "Carrier frequency used: 2000 Hz\nCarrier found by cracker: 1541 Hz\nTop candidates: 1541 Hz, 1745 Hz, 1663 Hz, 1622 Hz, 1500 Hz\nCorrelation (original vs scrambled): -0.0014\nCorrelation (original vs cracked): 0.0208\n\nHistorical context:\n  The Germans operated listening stations (including one in the\n  Netherlands) that intercepted and broke A-3 calls in real time.\n  The real A-3 was more complex than this demo (multi-band shuffling),\n  but the vulnerability was the same: speech structure survived.\n\nHow this simulator models the crack:\n  Our automated cracker tries 50 carrier frequencies and\n  scores each for speech-likeness (low spectral centroid + high spectral\n  variance = speech). The exact frequency doesn't need to match\n  perfectly -- close enough recovers intelligible speech."
       }
     },
     {
@@ -122,7 +122,7 @@
         "n_voiced": 107,
         "n_unvoiced": 178,
         "compression_ratio": "74:1",
-        "correlation_vocoded": -0.0054,
+        "correlation_vocoded": -0.0041,
         "level_distribution": {
           "0": 473,
           "1": 542,
@@ -131,7 +131,7 @@
           "4": 389,
           "5": 437
         },
-        "text": "Frames: 285 at 50 fps (5.70s)\nVoiced: 107/285 (38%), Unvoiced: 178/285 (62%)\nCompression: 876:1 (44100 samples/sec -> 600 values/sec)\nQuantization: 6 levels per band (10 bands)\nLevel distribution: L0=473, L1=542, L2=509, L3=500, L4=389, L5=437\nCorrelation (original vs vocoded): -0.0054\n\nThe robotic quality comes from coarse quantization (6 levels\nvs ~65,000 in 16-bit audio) and simplified excitation (pulse train\ninstead of real glottal waveform)."
+        "text": "Frames: 285 at 50 fps (5.70s)\nVoiced: 107/285 (38%), Unvoiced: 178/285 (62%)\nCompression: 876:1 (44100 samples/sec -> 600 values/sec)\nQuantization: 6 levels per band (10 bands)\nLevel distribution: L0=473, L1=542, L2=509, L3=500, L4=389, L5=437\nCorrelation (original vs vocoded): -0.0041\n\nThe robotic quality comes from coarse quantization (6 levels\nvs ~65,000 in 16-bit audio) and simplified excitation (pulse train\ninstead of real glottal waveform)."
       }
     },
     {
@@ -148,7 +148,7 @@
         }
       ],
       "diagnostics": {
-        "text": "Key record: 536 frames at 50 fps (10.7s)\nTotal random values: 5,896 (536 frames x (10 bands + 1 pitch))\nEach value: independently, uniformly random in [0, 5]\n\nThree requirements for unbreakable encryption (all must hold):\n  1. Key must be truly random (SIGSALY: vacuum tube thermal noise)\n  2. Key must be at least as long as the message (12-min records)\n  3. Key must never be reused (records destroyed after use)"
+        "text": "Key record: 536 frames at 50 fps (10.7s)\nEncrypted streams: 10 band keys (mod 6) + 1 pitch key (mod 36)\nTotal key values: 5,896 (536 frames x (10 bands + 1 pitch))\nEach value: independently, uniformly random\nNote: the voiced/unvoiced flag is not encrypted in this simulator\n\nThree requirements for unbreakable encryption (all must hold):\n  1. Key must be truly random (SIGSALY: vacuum tube thermal noise)\n  2. Key must be at least as long as the message (12-min records)\n  3. Key must never be reused (records destroyed after use)\n\nDemo note: this run uses seed=42 for reproducible results.\nReal SIGSALY used physical noise with no seed -- truly unpredictable."
       }
     },
     {
@@ -172,7 +172,7 @@
         }
       ],
       "diagnostics": {
-        "correlation_encrypted": -0.0019,
+        "correlation_encrypted": 0.0002,
         "original_encrypted_correlation": 0.0066,
         "encrypted_distribution": {
           "0": 478,
@@ -182,7 +182,7 @@
           "4": 469,
           "5": 499
         },
-        "text": "Correlation (original vs encrypted audio): -0.0019 (should be ~0.0)\nCorrelation (original params vs encrypted params): 0.0066\nEncrypted level distribution: L0=478, L1=486, L2=468, L3=450, L4=469, L5=499\n  (Should be ~uniform: ~475 each)\n\nThe encrypted values are uniformly distributed -- every level (0-5)\nappears with roughly equal frequency, regardless of what the original\nspeech contained. This is the hallmark of good encryption."
+        "text": "Correlation (original vs encrypted audio): 0.0002 (should be ~0.0)\nCorrelation (original params vs encrypted params): 0.0066\nEncrypted level distribution: L0=478, L1=486, L2=468, L3=450, L4=469, L5=499\n  (Should be ~uniform: ~475 each)\n\nThe encrypted values are uniformly distributed -- every level (0-5)\nappears with roughly equal frequency, regardless of what the original\nspeech contained. This is the hallmark of good encryption."
       }
     },
     {
@@ -232,7 +232,7 @@
     {
       "id": 7,
       "title": "The Engineering Challenge: Synchronization",
-      "description": "The one-time pad is mathematically perfect -- but it demands perfect logistics. Both terminals must play their vinyl key records at exactly the same speed, starting at exactly the same moment. The vocoder produces one <span class=\"tooltip\">frame<span class=\"tooltip-text\">One complete set of vocoder measurements: 10 band amplitudes + 1 pitch + 1 voiced/unvoiced flag = 12 values. The vocoder produces 50 frames per second (one every 20 milliseconds). Each frame is independently encrypted with its own key values from the vinyl record.</span></span> every 20 milliseconds (50 frames per second). If the receiver's turntable <span class=\"tooltip\">drifts<span class=\"tooltip-text\">In practice, clocks and turntable motors are never perfectly precise. Crystal oscillators drift by a few parts per million. Over a 12-minute conversation, even 1 ppm of clock error accumulates to ~0.7ms -- approaching 1/30th of a frame. SIGSALY used matched precision clocks to keep drift below this threshold.</span></span> by even a single frame, it reads the wrong key value for that frame and every frame after it. Since adjacent key values are independently random, using the wrong one is no better than using a completely different key. Listen to what happens with increasing misalignment: 1 frame (20ms) sounds just as destroyed as 25 frames (500ms). This is why SIGSALY required <span class=\"tooltip\">precision time-of-day clocks<span class=\"tooltip-text\">High-accuracy quartz crystal clocks synchronized to a reference time standard. Both terminals had to agree on exactly when to start playing each record. The clocks had to maintain synchronization over the full 12-minute record duration without drifting by more than a fraction of a frame.</span></span> at both terminals, and why the complete system weighed over 50 tons and filled 40 equipment racks. The <span class=\"tooltip\">key management problem<span class=\"tooltip-text\">The practical challenge of creating, copying, distributing, synchronizing, and destroying encryption keys. SIGSALY's key management was a massive logistics operation: manufacturing records, armed courier transport across the Atlantic, secure storage, precise playback timing, and immediate destruction after use. This same fundamental challenge exists in all encryption systems today -- the math may be easy, but managing the keys is hard.</span></span> -- manufacturing, duplicating, shipping by armed courier, synchronizing playback, and destroying used records -- was as critical to security as the mathematics.",
+      "description": "The one-time pad is mathematically perfect -- but it demands perfect logistics. Both terminals must play their vinyl key records at exactly the same speed, starting at exactly the same moment. The vocoder produces one <span class=\"tooltip\">frame<span class=\"tooltip-text\">One complete set of vocoder parameters, produced 50 times per second (every 20 milliseconds). Each frame contains 10 band amplitudes and a pitch value that are encrypted, plus a voiced/unvoiced flag that is carried separately. The key record supplies one matching set of random values per frame.</span></span> every 20 milliseconds (50 frames per second). If the receiver's turntable <span class=\"tooltip\">drifts<span class=\"tooltip-text\">In practice, clocks and turntable motors are never perfectly precise. Crystal oscillators drift by a few parts per million. Over a 12-minute conversation, even 1 ppm of clock error accumulates to ~0.7ms -- approaching 1/30th of a frame. SIGSALY used matched precision clocks to keep drift below this threshold.</span></span> by even a single frame, it reads the wrong key value for that frame and every frame after it. Since adjacent key values are independently random, using the wrong one is no better than using a completely different key. Listen to what happens with increasing misalignment: 1 frame (20ms) sounds just as destroyed as 25 frames (500ms). This is why SIGSALY required <span class=\"tooltip\">precision time-of-day clocks<span class=\"tooltip-text\">High-accuracy quartz crystal clocks synchronized to a reference time standard. Both terminals had to agree on exactly when to start playing each record. The clocks had to maintain synchronization over the full 12-minute record duration without drifting by more than a fraction of a frame.</span></span> at both terminals, and why the complete system weighed over 50 tons and filled 40 equipment racks. The <span class=\"tooltip\">key management problem<span class=\"tooltip-text\">The practical challenge of creating, copying, distributing, synchronizing, and destroying encryption keys. SIGSALY's key management was a massive logistics operation: manufacturing records, armed courier transport across the Atlantic, secure storage, precise playback timing, and immediate destruction after use. This same fundamental challenge exists in all encryption systems today -- the math may be easy, but managing the keys is hard.</span></span> -- manufacturing, duplicating, shipping by armed courier, synchronizing playback, and destroying used records -- was as critical to security as the mathematics.",
       "outputs": [
         {
           "filename": "7_desync_1frame.wav",
@@ -287,7 +287,7 @@
   ],
   "summary": {
     "a3_crack_correlation": 0.0208,
-    "sigsaly_encrypted_correlation": -0.0019,
+    "sigsaly_encrypted_correlation": 0.0002,
     "sigsaly_crack_attempt_correlation": -0.0006,
     "roundtrip_perfect": true
   },

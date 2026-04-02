@@ -187,26 +187,29 @@ def run_web_pipeline(input_wav_path, params=None):
         'id': 1,
         'title': 'First Attempt: A-3 Scrambler',
         'description': (
-            'The Allies\' first solution was the A-3 scrambler -- '
+            'The Allies\' first solution was the A-3 scrambler. The real wartime A-3 was a '
+            'multi-band system; this simulator models the core idea with a simplified '
             + _tip('frequency inversion', 'Multiplying a signal by a cosine wave at the carrier frequency '
                    'flips the spectrum: a 500 Hz tone becomes (carrier - 500) Hz. It\'s like looking at '
-                   'a photo negative -- everything is reversed, but the structure is preserved.')
-            + f' around a secret carrier frequency ({carrier_freq} Hz) so low sounds become high '
-            'and vice versa. Listen to the scrambled audio: it sounds like garbled alien noise. '
+                   'a photo negative -- everything is reversed, but the structure is preserved. '
+                   'The real A-3 split audio into multiple bands and shuffled/inverted them, but '
+                   'the fundamental vulnerability was the same.')
+            + f' demo (carrier = {carrier_freq} Hz). '
+            'Listen to the scrambled audio: it sounds like garbled alien noise. '
             'Surely no one could understand that? '
             'But the Germans could. By 1941, they were routinely cracking A-3 calls using '
             + _tip('spectral analysis', 'Examining the frequency content of a signal over time. '
                    'Speech has a very distinctive spectral "fingerprint" -- most energy below 1000 Hz, '
                    'clear formant peaks from vowel resonances, and a 1/f energy rolloff. These patterns '
-                   'survive frequency inversion (just mirrored), making it easy to detect.')
-            + '. The "secret" was a single number (the carrier frequency) -- '
-            'think of it like a combination lock with only one dial. '
+                   'survive scrambling transformations that preserve spectral structure.')
+            + '. Whether the real multi-band A-3 or our simplified one-carrier demo, the core problem '
+            'is the same: the spectral structure of speech survives the transformation. '
             'Speech has such distinctive '
             + _tip('formant patterns', 'Formants are resonant frequencies of the vocal tract. '
                    'Different vowels have different formant patterns (e.g., "ee" has formants around '
                    '270 and 2300 Hz, "ah" around 730 and 1090 Hz). These patterns create recognizable '
-                   'peaks in the spectrogram that are visible even after frequency inversion.')
-            + ' that finding it was trivial. '
+                   'peaks in the spectrogram that persist through any structure-preserving scramble.')
+            + ' that an analyst can recover the original. '
             'Listen to the cracked output -- the speech is recovered. The A-3 was '
             + _tip('security through obscurity', 'A system that relies on keeping its method secret '
                    'rather than on mathematical guarantees. If the attacker learns how the system works '
@@ -243,17 +246,17 @@ def run_web_pipeline(input_wav_path, params=None):
                 f'Top candidates: {", ".join(f"{f:.0f} Hz" for f, _ in sorted_scores)}\n'
                 f'Correlation (original vs scrambled): {corr_scrambled}\n'
                 f'Correlation (original vs cracked): {corr_cracked}\n'
-                f'\nHow the Germans actually did it:\n'
-                f'  The Germans operated dedicated listening stations (notably at\n'
-                f'  Eindhoven, Netherlands). Trained operators recorded scrambled calls,\n'
-                f'  then swept a carrier frequency dial while watching the output on a\n'
-                f'  spectrum analyzer. When speech-like patterns appeared, they fine-tuned\n'
-                f'  and listened. A skilled operator could crack a call in minutes.\n'
+                f'\nHistorical context:\n'
+                f'  The Germans operated listening stations (including one in the\n'
+                f'  Netherlands) that intercepted and broke A-3 calls in real time.\n'
+                f'  The real A-3 was more complex than this demo (multi-band shuffling),\n'
+                f'  but the vulnerability was the same: speech structure survived.\n'
                 f'\n'
-                f'  Our automated cracker simulates this: it tries {len(sorted_scores)*10} carrier\n'
-                f'  frequencies and scores each for speech-likeness (low spectral centroid\n'
-                f'  + high spectral variance = speech). The exact frequency doesn\'t need\n'
-                f'  to match perfectly -- close enough recovers intelligible speech.'
+                f'How this simulator models the crack:\n'
+                f'  Our automated cracker tries {len(sorted_scores)*10} carrier frequencies and\n'
+                f'  scores each for speech-likeness (low spectral centroid + high spectral\n'
+                f'  variance = speech). The exact frequency doesn\'t need to match\n'
+                f'  perfectly -- close enough recovers intelligible speech.'
             ),
         }
     })
@@ -386,13 +389,20 @@ def run_web_pipeline(input_wav_path, params=None):
             'text': (
                 f'Key record: {key_n_frames} frames at {FRAME_RATE} fps '
                 f'({key["metadata"]["duration_seconds"]:.1f}s)\n'
-                f'Total random values: {key_n_values:,} '
+                f'Encrypted streams: {NUM_BANDS} band keys (mod {NUM_LEVELS}) + 1 pitch key (mod 36)\n'
+                f'Total key values: {key_n_values:,} '
                 f'({key_n_frames} frames x ({NUM_BANDS} bands + 1 pitch))\n'
-                f'Each value: independently, uniformly random in [0, {NUM_LEVELS-1}]\n'
+                f'Each value: independently, uniformly random\n'
+                f'Note: the voiced/unvoiced flag is not encrypted in this simulator\n'
                 f'\nThree requirements for unbreakable encryption (all must hold):\n'
                 f'  1. Key must be truly random (SIGSALY: vacuum tube thermal noise)\n'
                 f'  2. Key must be at least as long as the message (12-min records)\n'
-                f'  3. Key must never be reused (records destroyed after use)'
+                f'  3. Key must never be reused (records destroyed after use)\n'
+                + (f'\nDemo note: this run uses seed={key_seed} for reproducible results.\n'
+                   f'Real SIGSALY used physical noise with no seed -- truly unpredictable.'
+                   if key_seed is not None else
+                   f'\nThis run uses unseeded randomness (no fixed seed) -- closer to how\n'
+                   f'real SIGSALY generated keys from physical vacuum tube noise.')
             ),
         }
     })
@@ -642,10 +652,10 @@ def run_web_pipeline(input_wav_path, params=None):
             'The one-time pad is mathematically perfect -- but it demands perfect logistics. '
             'Both terminals must play their vinyl key records at exactly the same speed, '
             'starting at exactly the same moment. The vocoder produces one '
-            + _tip('frame', 'One complete set of vocoder measurements: 10 band amplitudes + 1 pitch '
-                   '+ 1 voiced/unvoiced flag = 12 values. The vocoder produces 50 frames per second '
-                   '(one every 20 milliseconds). Each frame is independently encrypted with its '
-                   'own key values from the vinyl record.')
+            + _tip('frame', 'One complete set of vocoder parameters, produced 50 times per second '
+                   '(every 20 milliseconds). Each frame contains 10 band amplitudes and a pitch value '
+                   'that are encrypted, plus a voiced/unvoiced flag that is carried separately. '
+                   'The key record supplies one matching set of random values per frame.')
             + f' every {frame_duration_ms:.0f} milliseconds ({FRAME_RATE} frames per second). If the '
             'receiver\'s turntable '
             + _tip('drifts', 'In practice, clocks and turntable motors are never perfectly precise. '

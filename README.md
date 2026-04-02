@@ -6,7 +6,7 @@ Built for students studying **IoT Security and Cybersecurity** — SIGSALY is a 
 
 ## What is SIGSALY?
 
-SIGSALY was the first digital, encrypted voice communication system. Before SIGSALY, the Allies used the **A-3 scrambler**, which simply flipped the audio frequency spectrum. The Germans cracked it routinely using spectral analysis by 1941.
+SIGSALY was the first digital, encrypted voice communication system. Before SIGSALY, the Allies used the **A-3 scrambler**, a multi-band audio scrambling system. The Germans cracked it routinely using spectral analysis by 1941. (This simulator models A-3 with a simplified frequency-inversion demo that illustrates the same core vulnerability: speech structure survives the transformation.)
 
 SIGSALY's breakthrough was a fundamentally different approach:
 
@@ -36,12 +36,13 @@ Both terminals played their vinyl key records simultaneously. If the turntables 
 ```
 sigsalysim/
 ├── input/                      # Source audio files
-│   └── sample_speech.wav       # Default sample (generated via macOS TTS)
+│   ├── sample_speech_eleven.mp3 # Built-in default sample (ElevenLabs TTS)
+│   └── sample_speech.wav       # Legacy CLI sample (macOS TTS)
 ├── output/                     # Generated audio artifacts (CLI pipeline)
 ├── sigsaly/                    # Core DSP modules (documented, standalone-runnable)
 │   ├── __init__.py
 │   ├── telephone.py            # 1940s phone line simulation
-│   ├── scrambler.py            # A-3 frequency inversion + cracker
+│   ├── scrambler.py            # Simplified A-3-style frequency inversion + cracker
 │   ├── vocoder.py              # 10-band channel vocoder
 │   ├── encryption.py           # One-time pad (mod-6 arithmetic)
 │   └── key_generation.py       # Vinyl record key generator

@@ -13,7 +13,7 @@ Historical context:
 
   The manufacturing process:
     1. Generate random noise using mercury-vapor tubes
-    2. Sample the noise 50 times/sec across 12 channels (10 bands + pitch + voiced)
+    2. Sample the noise 50 times/sec across the vocoder channels
     3. Quantize each sample to 6 levels (0-5)
     4. Record the values onto a vinyl phonograph record
     5. Press an IDENTICAL copy of the record

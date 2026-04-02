@@ -1,21 +1,22 @@
 """
-A-3 Frequency Inversion Scrambler
-==================================
-The pre-SIGSALY scrambling approach used by the Allies for "secure" voice
-communication. The A-3 scrambler inverted the frequency spectrum around a
-carrier frequency — low frequencies become high and vice versa.
+Simplified A-3-Style Frequency Inversion Scrambler
+====================================================
+A simplified model of the pre-SIGSALY scrambling approach used by the Allies.
+The real wartime A-3 was a more complex multi-band system that split audio
+into several bands and shuffled/inverted them. This simulator uses a single
+carrier frequency inversion to demonstrate the core vulnerability: speech
+spectral structure survives scrambling and can be recovered by analysis.
 
 Historical context:
   The A-3 was used by the Allies for sensitive phone calls, including
   transatlantic conversations between Washington and London. It sounds
   completely unintelligible to a casual listener — like garbled alien speech.
 
-  However, the Germans were routinely cracking A-3 communications by 1941.
-  Their approach was straightforward:
-    1. Record the scrambled transmission
-    2. Use a spectrum analyzer to try different carrier frequencies
-    3. When speech-like patterns appear, you've found the carrier
-    4. Apply the inverse transform to recover the original speech
+  However, the Germans were routinely cracking A-3 communications by 1941
+  at listening stations including one in the Netherlands. Whether the real
+  multi-band A-3 or this simplified single-carrier model, the fundamental
+  problem is the same: the statistical properties of speech survive the
+  transformation, making it vulnerable to spectral analysis.
 
   This vulnerability directly motivated the development of SIGSALY.
 
