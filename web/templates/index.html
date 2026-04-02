@@ -13,6 +13,43 @@
     <p>WWII Secure Voice Communication System (1943–1946) — Educational Demonstration</p>
 </header>
 
+<!-- ── Intro / Motivation ────────────────────────────── -->
+<section class="intro">
+    <div class="intro-content">
+        <p>
+            <strong>SIGSALY</strong> was the world's first digital, encrypted voice system — built by Bell Labs in 1943
+            so Roosevelt and Churchill could talk without the Germans listening in.
+        </p>
+        <p>
+            Before SIGSALY, the Allies used the <strong>A-3 scrambler</strong>, which simply flipped the audio spectrum.
+            It sounded unintelligible, but the Germans cracked it routinely using spectral analysis.
+            SIGSALY replaced this with a fundamentally different approach: digitize speech with a
+            <span class="tooltip">vocoder<span class="tooltip-text">A "voice coder" that decomposes speech into 10 frequency band amplitudes + pitch, sampled 50 times per second. Invented by Homer Dudley at Bell Labs in 1939.</span></span>,
+            encrypt the parameters with a
+            <span class="tooltip">one-time pad<span class="tooltip-text">An encryption method using random key values and modular arithmetic. Proved unbreakable by Claude Shannon in 1949 — the ONLY encryption with a mathematical proof of perfect secrecy.</span></span>,
+            and transmit the result. The key was stored on vinyl records filled with random noise, shipped by armed courier.
+        </p>
+        <p>
+            This simulator lets you <strong>hear each step</strong> of that process — from the original voice, through
+            naive scrambling (and its defeat), to the full SIGSALY system. Upload your own audio or use the built-in sample,
+            adjust parameters, and explore.
+        </p>
+    </div>
+    <div class="intro-pipeline">
+        <div class="pipeline-step">Voice</div>
+        <div class="pipeline-arrow"></div>
+        <div class="pipeline-step">Vocoder</div>
+        <div class="pipeline-arrow"></div>
+        <div class="pipeline-step">Encrypt<br><small>mod 6</small></div>
+        <div class="pipeline-arrow"></div>
+        <div class="pipeline-step">Transmit</div>
+        <div class="pipeline-arrow"></div>
+        <div class="pipeline-step">Decrypt<br><small>mod 6</small></div>
+        <div class="pipeline-arrow"></div>
+        <div class="pipeline-step">Voice</div>
+    </div>
+</section>
+
 {% if error %}
 <div class="error">{{ error }}</div>
 {% endif %}
@@ -57,30 +94,45 @@
         <div class="params-section">
             <div class="slider-group">
                 <label>
-                    Telephone Line SNR
+                    <span class="tooltip">Telephone Line SNR<span class="tooltip-text">Signal-to-Noise Ratio: measures how much louder the signal is than the background noise. Every 10 dB increase means noise power drops by 10x. The 1940s transatlantic link (Washington to London via HF radio) was roughly 25-30 dB.</span></span>
                     <output id="snr-val">{{ results.params.snr_db if results else 28 }}</output> dB
                 </label>
                 <input type="range" name="snr_db" min="10" max="50"
                        value="{{ results.params.snr_db if results else 28 }}"
                        oninput="document.getElementById('snr-val').textContent=this.value">
+                <div class="slider-labels">
+                    <span>10 dB<br><small>barely usable</small></span>
+                    <span>28 dB<br><small>1940s transatlantic</small></span>
+                    <span>50 dB<br><small>modern digital</small></span>
+                </div>
             </div>
             <div class="slider-group">
                 <label>
-                    A-3 Carrier Frequency
+                    <span class="tooltip">A-3 Carrier Frequency<span class="tooltip-text">The single "secret" of the A-3 scrambler. The spectrum is flipped around this frequency — low sounds become high and vice versa. This one number is the entire key. The Germans only needed to guess it (by trying different values) to crack the system.</span></span>
                     <output id="carrier-val">{{ results.params.carrier_freq if results else 2000 }}</output> Hz
                 </label>
                 <input type="range" name="carrier_freq" min="500" max="5000" step="50"
                        value="{{ results.params.carrier_freq if results else 2000 }}"
                        oninput="document.getElementById('carrier-val').textContent=this.value">
+                <div class="slider-labels">
+                    <span>500 Hz</span>
+                    <span>2000 Hz<br><small>typical A-3</small></span>
+                    <span>5000 Hz</span>
+                </div>
             </div>
             <div class="slider-group">
                 <label>
-                    Max Desync Offset
+                    <span class="tooltip">Max Desync Offset<span class="tooltip-text">Simulates clock drift between sender and receiver turntables. At 50 frames/sec, 1 frame = 20ms. Even 1 frame of offset uses completely wrong key values, dropping decryption accuracy to random chance (~16.7%). This is why SIGSALY needed precision clocks.</span></span>
                     <output id="desync-val">{{ results.params.desync_offsets[-1] if results else 25 }}</output> frames
                 </label>
                 <input type="range" name="desync_max" min="1" max="100"
                        value="{{ results.params.desync_offsets[-1] if results else 25 }}"
                        oninput="document.getElementById('desync-val').textContent=this.value">
+                <div class="slider-labels">
+                    <span>1 frame<br><small>20ms</small></span>
+                    <span></span>
+                    <span>100 frames<br><small>2 seconds</small></span>
+                </div>
             </div>
         </div>
 
@@ -105,7 +157,7 @@
     Source: {{ "{:,}".format(results.source_info.samples) }} samples,
     {{ results.source_info.sr }} Hz,
     {{ results.source_info.duration }}s
-    (Nyquist: {{ results.source_info.nyquist }} Hz)
+    (<span class="tooltip">Nyquist<span class="tooltip-text">The Nyquist frequency is half the sample rate — it's the highest frequency that can be represented. At {{ results.source_info.sr }} Hz sample rate, frequencies above {{ results.source_info.nyquist }} Hz cannot be captured.</span></span>: {{ results.source_info.nyquist }} Hz)
 </div>
 
 <!-- ── Pipeline Stages ───────────────────────────────── -->
@@ -141,6 +193,10 @@
 <!-- ── Summary ───────────────────────────────────────── -->
 <section class="summary">
     <h2>Security Comparison</h2>
+    <p class="summary-description">
+        <span class="tooltip">Correlation<span class="tooltip-text">Pearson correlation measures how similar two signals are. +1.0 = identical, 0.0 = no relationship (random), -1.0 = perfectly inverted. For good encryption, the correlation between original and encrypted should be ~0.0.</span></span>
+        between the original speech and each output — closer to 0 means the attacker learns nothing.
+    </p>
     <div class="summary-grid">
         <div class="summary-item">
             <div class="label">A-3 Scrambler (cracked)</div>
@@ -161,7 +217,9 @@
             </div>
         </div>
         <div class="summary-item">
-            <div class="label">Encryption Roundtrip</div>
+            <div class="label">
+                <span class="tooltip">Encryption Roundtrip<span class="tooltip-text">Verifies that decrypt(encrypt(x)) = x for every single value. With the correct key and perfect synchronization, the one-time pad is perfectly reversible — zero information loss.</span></span>
+            </div>
             <div class="value {{ 'good' if results.summary.roundtrip_perfect else 'bad' }}">
                 {{ "PERFECT" if results.summary.roundtrip_perfect else "FAILED" }}
             </div>
@@ -171,20 +229,27 @@
 
 {% endif %}
 
+<!-- ── References ────────────────────────────────────── -->
+<footer>
+    <p>
+        <a href="https://en.wikipedia.org/wiki/SIGSALY" target="_blank" rel="noopener">SIGSALY — Wikipedia</a> ·
+        <a href="https://99percentinvisible.org/episode/vox-ex-machina/" target="_blank" rel="noopener">99% Invisible: Vox Ex Machina</a> ·
+        Shannon, C.E. (1949). "Communication Theory of Secrecy Systems." <em>Bell System Technical Journal</em>.
+    </p>
+</footer>
+
 <script>
 function showLoading() {
     document.getElementById('loading').classList.add('active');
 }
 
 function previewUploadedAudio(input) {
-    // When a user selects a file, update the preview player to play it locally
     if (input.files && input.files[0]) {
         var file = input.files[0];
         var url = URL.createObjectURL(file);
         var player = document.getElementById('source-player');
         player.src = url;
         player.load();
-        // Update the label
         var label = document.querySelector('.source-preview-label strong');
         if (label) label.textContent = file.name;
         var meta = document.querySelector('.source-preview-label span');
