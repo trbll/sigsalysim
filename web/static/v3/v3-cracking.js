@@ -117,7 +117,17 @@ const CrackingWorkbench = (() => {
         const mode = document.body.dataset.mode || 'a3';
         const actualCarrier = (window.SIGSALY_V3?.params?.carrier_freq) || 2000;
 
-        if (mode !== 'a3') return; // SIGSALY status is static in HTML
+        if (mode !== 'a3') {
+            // SIGSALY mode: slider is visible but useless
+            if (isActive) {
+                el.textContent = 'Nothing... SIGSALY uses random keys, not spectrum inversion. No carrier to find.';
+                el.style.color = '#4ecca3';
+            } else {
+                el.textContent = 'Tap the wire to listen. The slider won\'t help against SIGSALY.';
+                el.style.color = '#4ecca3';
+            }
+            return;
+        }
 
         if (!isActive) {
             el.textContent = 'Tap the wire, then drag to find speech...';

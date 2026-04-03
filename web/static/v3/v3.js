@@ -36,6 +36,7 @@
 
             AudioEngine.stop();
             CrackingWorkbench.stopCracking();
+            CrackingWorkbench.updateStatus();
             clearTapped();
             setLabel('Click any wire to tap in');
         });

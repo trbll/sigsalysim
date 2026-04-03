@@ -257,9 +257,40 @@ body {
 .stage-unit {
     width: 90px;
     height: 55px;
-    background: var(--surface);
+    background: linear-gradient(180deg, #1e2a45 0%, #162035 100%);
     border: 1.5px solid var(--terminal-border);
     border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Subtle equipment texture — horizontal lines like rack-mount gear */
+.stage-unit::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent 0px,
+        transparent 4px,
+        rgba(255,255,255,0.02) 4px,
+        rgba(255,255,255,0.02) 5px
+    );
+    border-radius: 2px;
+}
+
+/* Small LED indicator dot */
+.stage-unit::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 4px var(--accent);
+    opacity: 0.7;
 }
 
 /* ── Vinyl Records ───────────────────────────────── */

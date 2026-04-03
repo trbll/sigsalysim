@@ -76,6 +76,11 @@ const VinylInteraction = (() => {
         // Snap to nearest available offset
         const snapped = snapToNearest(Math.round(currentOffset));
         setOffset(snapped);
+        // Resume spinning if at offset 0 (in sync)
+        if (recordEl && snapped === 0) {
+            recordEl.classList.add('spinning');
+            recordEl.style.transform = '';
+        }
     }
 
     function getAngle(e) {
@@ -102,15 +107,15 @@ const VinylInteraction = (() => {
         currentOffset = offset;
         updateDisplay();
 
-        // Update the decrypt headphone jack to point to the correct variant
-        const decryptJack = document.querySelector('[data-stage="decrypt"] .headphone-jack');
-        if (decryptJack) {
-            decryptJack.dataset.variant = `sigsaly_decrypted_${offset}`;
-        }
-
-        // Visual rotation: offset * 7.2 degrees
+        // Visual: spin normally at 0, show static rotation at offset
         if (recordEl) {
-            recordEl.style.transform = `rotate(${offset * 7.2}deg)`;
+            if (offset === 0) {
+                recordEl.classList.add('spinning');
+                recordEl.style.transform = '';
+            } else {
+                recordEl.classList.remove('spinning');
+                recordEl.style.transform = `rotate(${offset * 7.2}deg)`;
+            }
         }
 
         // If currently playing decrypt audio, switch to new offset
