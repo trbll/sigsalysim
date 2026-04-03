@@ -1,10 +1,8 @@
 /**
  * v3 Vinyl Record Interaction
  * ============================
- * Makes the receiver's vinyl record draggable to simulate clock
- * desynchronization. Dragging rotates the record and maps the
- * rotation to a frame offset, switching between pre-computed
- * desync audio variants.
+ * Drag receiver record to simulate desync.
+ * Simple model: mousedown stops audio, mouseup calculates offset and restarts.
  */
 
 const VinylInteraction = (() => {
@@ -14,7 +12,6 @@ const VinylInteraction = (() => {
     let recordEl = null;
     let displayEl = null;
 
-    // Available pre-computed offsets (must match pipeline_v3.py)
     const AVAILABLE_OFFSETS = [0, 1, 2, 5, 10, 25, 50];
 
     function init() {
@@ -24,58 +21,76 @@ const VinylInteraction = (() => {
 
         if (!recordEl) return;
 
-        recordEl.addEventListener('mousedown', onMouseDown);
-        recordEl.addEventListener('touchstart', onTouchStart, { passive: false });
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
+        recordEl.addEventListener('mousedown', onDown);
+        recordEl.addEventListener('touchstart', onTouchDown, { passive: false });
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
         document.addEventListener('touchmove', onTouchMove, { passive: false });
-        document.addEventListener('touchend', onMouseUp);
+        document.addEventListener('touchend', onUp);
 
         if (resetBtn) {
-            resetBtn.addEventListener('click', () => setOffset(0));
+            resetBtn.addEventListener('click', () => {
+                // Stop, reset, restart
+                AudioEngine.stop();
+                currentOffset = 0;
+                updateVisual();
+                updateDisplay();
+                // Dispatch so v3.js restarts audio at offset 0
+                dispatch(0);
+            });
         }
     }
 
-    function onMouseDown(e) {
+    function onDown(e) {
         isDragging = true;
         startAngle = getAngle(e);
+        // Stop audio immediately on grab
+        AudioEngine.stop();
         recordEl.classList.remove('spinning');
         e.preventDefault();
     }
 
-    function onTouchStart(e) {
+    function onTouchDown(e) {
         if (e.touches.length === 1) {
             isDragging = true;
             startAngle = getAngle(e.touches[0]);
+            AudioEngine.stop();
             recordEl.classList.remove('spinning');
             e.preventDefault();
         }
     }
 
-    function onMouseMove(e) {
+    function onMove(e) {
         if (!isDragging) return;
         const angle = getAngle(e);
         const delta = angle - startAngle;
         startAngle = angle;
-
-        // Map rotation to offset: ~7.2 degrees per frame
-        // Full rotation (360°) = 50 frames
         currentOffset = Math.max(0, Math.min(50, currentOffset + delta / 7.2));
         updateDisplay();
+        // Show rotation while dragging
+        if (recordEl) {
+            recordEl.style.transform = `rotate(${currentOffset * 7.2}deg)`;
+        }
     }
 
     function onTouchMove(e) {
         if (!isDragging || e.touches.length !== 1) return;
-        onMouseMove(e.touches[0]);
+        onMove(e.touches[0]);
         e.preventDefault();
     }
 
-    function onMouseUp() {
+    function onUp() {
         if (!isDragging) return;
         isDragging = false;
+
         // Snap to nearest available offset
         const snapped = snapToNearest(Math.round(currentOffset));
-        setOffset(snapped);
+        currentOffset = snapped;
+        updateDisplay();
+        updateVisual();
+
+        // Dispatch event — v3.js will start playback at new offset
+        dispatch(snapped);
     }
 
     function getAngle(e) {
@@ -89,39 +104,30 @@ const VinylInteraction = (() => {
         let closest = AVAILABLE_OFFSETS[0];
         let minDist = Math.abs(value - closest);
         for (const o of AVAILABLE_OFFSETS) {
-            const dist = Math.abs(value - o);
-            if (dist < minDist) {
+            if (Math.abs(value - o) < minDist) {
                 closest = o;
-                minDist = dist;
+                minDist = Math.abs(value - o);
             }
         }
         return closest;
     }
 
-    function setOffset(offset) {
-        currentOffset = offset;
-        updateDisplay();
-
-        // Record always spins — animation-delay offsets the phase
-        if (recordEl) {
-            recordEl.classList.add('spinning');
-            recordEl.style.animationDelay = `${-offset * 0.04}s`;
-        }
-
-        // Dispatch event — v3.js handles audio switching
-        document.dispatchEvent(new CustomEvent('desync-change', { detail: { offset } }));
+    function updateVisual() {
+        if (!recordEl) return;
+        recordEl.classList.add('spinning');
+        recordEl.style.transform = '';
+        recordEl.style.animationDelay = `${-currentOffset * 0.04}s`;
     }
 
     function updateDisplay() {
-        if (displayEl) {
-            const rounded = Math.round(currentOffset);
-            displayEl.textContent = rounded;
-        }
+        if (displayEl) displayEl.textContent = Math.round(currentOffset);
     }
 
-    function getOffset() {
-        return snapToNearest(Math.round(currentOffset));
+    function dispatch(offset) {
+        document.dispatchEvent(new CustomEvent('desync-change', { detail: { offset } }));
     }
 
-    return { init, setOffset, getOffset };
+    function getOffset() { return snapToNearest(Math.round(currentOffset)); }
+
+    return { init, getOffset };
 })();

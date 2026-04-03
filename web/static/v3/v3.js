@@ -93,9 +93,9 @@
         });
     });
 
-    // ── Desync changes update active audio ──────────────────
-    // This is the ONLY place that handles desync audio switching.
-    // v3-vinyl.js dispatches 'desync-change' and we handle it here.
+    // ── Desync changes ──────────────────────────────────────
+    // Vinyl mousedown stops audio, mouseup dispatches this with new offset.
+    // We start playback at the new offset and update wire datasets.
     document.addEventListener('desync-change', (e) => {
         const offset = e.detail.offset;
         const newVariant = `sigsaly_decrypted_${offset}`;
@@ -103,7 +103,7 @@
             ? 'Decrypted (perfect sync)'
             : `Decrypted (${offset} frame offset — DESYNC!)`;
 
-        // Update all receiver output wires to point to the new offset variant
+        // Update receiver output wire datasets
         document.querySelectorAll('.wire-tap').forEach(w => {
             if (w.dataset.variantSigsaly && w.dataset.variantSigsaly.startsWith('sigsaly_decrypted')) {
                 w.dataset.variantSigsaly = newVariant;
@@ -115,14 +115,17 @@
             }
         });
 
-        // If currently playing ANY decrypted variant, switch immediately
-        const current = AudioEngine.currentVariant;
-        if (current && current.startsWith('sigsaly_decrypted')) {
-            // Stop current and start new — clean switch
-            AudioEngine.stop();
-            AudioEngine.play(newVariant, newLabel, true);
-            setLabel('🔊 ' + newLabel);
-        }
+        // Always start playback — vinyl already stopped audio on mousedown
+        AudioEngine.stop(); // Ensure clean state
+        AudioEngine.play(newVariant, newLabel, true);
+        setLabel('🔊 ' + newLabel);
+
+        // Mark the receiver output wire as tapped
+        clearTapped();
+        document.querySelectorAll('.wire-tap').forEach(w => {
+            const v = w.dataset.variantSigsaly || w.dataset.variant;
+            if (v === newVariant) w.classList.add('tapped');
+        });
     });
 
     // ── Helpers ─────────────────────────────────────────────
