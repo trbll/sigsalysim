@@ -27,7 +27,7 @@ import tempfile
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
-from flask import Flask, render_template, request, send_from_directory, redirect, url_for
+from flask import Flask, render_template, request, send_from_directory
 import soundfile as sf
 
 from web.pipeline import run_web_pipeline, cleanup_old_sessions
@@ -37,6 +37,7 @@ app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB upload limit
 
 VALID_THEMES = {'default', 'codex'}
+VALID_SOURCE_MODES = {'builtin', 'upload', 'record'}
 
 # Maximum audio duration in seconds. Longer clips take proportionally longer
 # to process (vocoder analysis, cracking search, spectrogram generation).
@@ -64,6 +65,35 @@ def _normalize_theme(theme):
     return theme if theme in VALID_THEMES else 'default'
 
 
+def _normalize_source_mode(source_mode):
+    """Limit source selection to the supported input modes."""
+    return source_mode if source_mode in VALID_SOURCE_MODES else 'builtin'
+
+
+def _get_default_source_info():
+    """Return metadata for the built-in sample used by the root app."""
+    default_info = sf.info(DEFAULT_SAMPLE)
+    return {
+        'name': 'Built-in sample',
+        'duration': round(default_info.duration, 2),
+        'sr': default_info.samplerate,
+    }
+
+
+def _render_index(*, theme, results=None, error=None, active_source_mode='builtin', is_default=False):
+    """Render the root app with consistent shared context."""
+    return render_template(
+        'index.html',
+        results=results,
+        error=error,
+        default_source=_get_default_source_info(),
+        max_duration=MAX_AUDIO_DURATION,
+        is_default=is_default,
+        theme=theme,
+        active_source_mode=_normalize_source_mode(active_source_mode),
+    )
+
+
 def _load_default_results():
     """Load pre-computed default results if available."""
     if not os.path.exists(DEFAULT_RESULTS_JSON):
@@ -88,62 +118,72 @@ def index():
 
     if default_results:
         # Serve the page with pre-computed results — instant load
-        return render_template('index.html', results=default_results,
-                               max_duration=MAX_AUDIO_DURATION,
-                               is_default=True,
-                               theme=theme)
+        return _render_index(
+            theme=theme,
+            results=default_results,
+            is_default=True,
+            active_source_mode='builtin',
+        )
     else:
         # No pre-computed results — show empty form with preview player
-        default_info = sf.info(DEFAULT_SAMPLE)
-        default_source = {
-            'name': 'Built-in sample',
-            'duration': round(default_info.duration, 2),
-            'sr': default_info.samplerate,
-        }
-        return render_template('index.html', results=None,
-                               default_source=default_source,
-                               max_duration=MAX_AUDIO_DURATION,
-                               theme=theme)
+        return _render_index(theme=theme, active_source_mode='builtin')
 
 
 @app.route('/run', methods=['POST'])
 def run_pipeline():
     """Accept audio input, run the SIGSALY pipeline, return results."""
     theme = _normalize_theme(request.form.get('theme') or request.args.get('theme'))
+    source_mode = _normalize_source_mode(request.form.get('source_mode'))
     cleanup_old_sessions()
 
     # Determine input audio source
     input_path = None
     source_name = 'Built-in sample'
     is_custom_upload = False
+    temp_input_path = None
 
-    if 'audio_file' in request.files and request.files['audio_file'].filename:
-        # User uploaded a file
-        uploaded = request.files['audio_file']
-        tmp_input = os.path.join(tempfile.gettempdir(), f'sigsaly_upload_{uploaded.filename}')
-        uploaded.save(tmp_input)
+    if source_mode in {'upload', 'record'}:
+        uploaded = request.files.get('audio_file')
+        if not uploaded or not uploaded.filename:
+            error = ('Please choose a file to upload.' if source_mode == 'upload'
+                     else 'Please record audio before running the pipeline.')
+            return _render_index(
+                theme=theme,
+                error=error,
+                active_source_mode=source_mode,
+            )
+
+        suffix = os.path.splitext(uploaded.filename)[1] or '.wav'
+        with tempfile.NamedTemporaryFile(prefix='sigsaly_input_', suffix=suffix, delete=False) as tmp:
+            temp_input_path = tmp.name
+        uploaded.save(temp_input_path)
 
         # Validate it's a readable audio file
         try:
-            info = sf.info(tmp_input)
+            info = sf.info(temp_input_path)
         except Exception as e:
-            return render_template('index.html', results=None,
-                                   error=f'Invalid audio file: {e}',
-                                   max_duration=MAX_AUDIO_DURATION,
-                                   theme=theme)
+            if temp_input_path and os.path.exists(temp_input_path):
+                os.unlink(temp_input_path)
+            return _render_index(
+                theme=theme,
+                error=f'Invalid audio file: {e}',
+                active_source_mode=source_mode,
+            )
 
         # Enforce duration limit
         if info.duration > MAX_AUDIO_DURATION:
-            os.unlink(tmp_input)
-            return render_template('index.html', results=None,
-                                   error=(f'Audio too long: {info.duration:.1f}s '
-                                          f'(maximum {MAX_AUDIO_DURATION}s). '
-                                          f'Please trim your audio and try again.'),
-                                   max_duration=MAX_AUDIO_DURATION,
-                                   theme=theme)
+            if temp_input_path and os.path.exists(temp_input_path):
+                os.unlink(temp_input_path)
+            return _render_index(
+                theme=theme,
+                error=(f'Audio too long: {info.duration:.1f}s '
+                       f'(maximum {MAX_AUDIO_DURATION}s). '
+                       f'Please trim your audio and try again.'),
+                active_source_mode=source_mode,
+            )
 
-        input_path = tmp_input
-        source_name = uploaded.filename
+        input_path = temp_input_path
+        source_name = 'Microphone recording' if source_mode == 'record' else uploaded.filename
         is_custom_upload = True
     else:
         # Using default sample — check if we need to re-run
@@ -170,25 +210,33 @@ def run_pipeline():
                 default_params.get('carrier_freq') == params['carrier_freq'] and
                 default_params.get('desync_offsets') == params['desync_offsets']):
                 # Params match — serve pre-computed results instantly
-                return render_template('index.html', results=default_results,
-                                       max_duration=MAX_AUDIO_DURATION,
-                                       is_default=True,
-                                       theme=theme)
+                return _render_index(
+                    theme=theme,
+                    results=default_results,
+                    is_default=True,
+                    active_source_mode='builtin',
+                )
 
     # Run the pipeline (custom audio or changed params)
     try:
         results = run_web_pipeline(input_path, params)
     except Exception as e:
-        return render_template('index.html', results=None,
-                               error=f'Pipeline error: {e}',
-                               max_duration=MAX_AUDIO_DURATION,
-                               theme=theme)
+        return _render_index(
+            theme=theme,
+            error=f'Pipeline error: {e}',
+            active_source_mode=source_mode,
+        )
+    finally:
+        if temp_input_path and os.path.exists(temp_input_path):
+            os.unlink(temp_input_path)
 
     results['source_info']['name'] = source_name
 
-    return render_template('index.html', results=results,
-                           max_duration=MAX_AUDIO_DURATION,
-                           theme=theme)
+    return _render_index(
+        theme=theme,
+        results=results,
+        active_source_mode=source_mode,
+    )
 
 
 @app.route('/default-sample')

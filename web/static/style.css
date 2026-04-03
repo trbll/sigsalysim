@@ -292,8 +292,108 @@ footer a:hover {
     gap: 0.75rem;
 }
 
+.source-mode-picker {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+.source-mode-option {
+    position: relative;
+    display: flex;
+}
+
+.source-mode-option input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.source-mode-option span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.source-mode-option input:checked + span {
+    background: var(--accent-bg);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.source-mode-option input:focus-visible + span {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.source-mode-option input:disabled + span {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.source-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    padding: 0.85rem;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    background: rgba(85, 107, 47, 0.04);
+}
+
+.source-panel[hidden] {
+    display: none !important;
+}
+
 .upload-section input[type="file"] {
     font-size: 0.9rem;
+}
+
+.source-help {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.45;
+}
+
+.record-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.record-status {
+    min-height: 2.8rem;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.82rem;
+    line-height: 1.45;
+}
+
+.record-status.is-recording {
+    background: var(--accent-bg);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.record-status.is-error {
+    background: #fdf2f0;
+    border-color: #e0b4a8;
+    color: var(--danger);
 }
 
 .source-preview {
@@ -374,6 +474,11 @@ footer a:hover {
     font-weight: 600;
     cursor: pointer;
     transition: background 0.15s;
+}
+
+.btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
 }
 
 .btn-primary {
@@ -835,16 +940,45 @@ body[data-theme="codex"] .tooltip .tooltip-text::after {
 body[data-theme="codex"] .source-preview,
 body[data-theme="codex"] .source-info,
 body[data-theme="codex"] .output-card,
-body[data-theme="codex"] .summary-item {
+body[data-theme="codex"] .summary-item,
+body[data-theme="codex"] .source-panel,
+body[data-theme="codex"] .record-status,
+body[data-theme="codex"] .source-mode-option span {
     background: rgba(255, 255, 255, 0.24);
     border: 1px solid var(--border);
     border-radius: 0;
 }
 
+body[data-theme="codex"] .source-mode-option span {
+    font-family: var(--mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+body[data-theme="codex"] .source-mode-option input:checked + span {
+    background: rgba(79, 91, 56, 0.14);
+    border-color: var(--accent);
+    box-shadow: 4px 4px 0 rgba(79, 91, 56, 0.18);
+    color: var(--accent);
+}
+
 body[data-theme="codex"] .source-preview-label span,
 body[data-theme="codex"] .output-meta,
-body[data-theme="codex"] .source-info {
+body[data-theme="codex"] .source-info,
+body[data-theme="codex"] .source-help {
     color: var(--text-muted);
+}
+
+body[data-theme="codex"] .record-status {
+    box-shadow: inset 0 0 0 1px rgba(94, 86, 65, 0.12);
+}
+
+body[data-theme="codex"] .record-status.is-recording {
+    background: rgba(79, 91, 56, 0.12);
+}
+
+body[data-theme="codex"] .record-status.is-error {
+    background: rgba(129, 47, 34, 0.08);
 }
 
 body[data-theme="codex"] .output-card {
@@ -934,6 +1068,7 @@ body[data-theme="codex"] footer a {
 
 @media (max-width: 700px) {
     .controls-grid { grid-template-columns: 1fr; }
+    .source-mode-picker { grid-template-columns: 1fr; }
     .output-grid,
     .output-grid-1col,
     .output-grid-2col,

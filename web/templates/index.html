@@ -68,14 +68,56 @@
     <div class="controls-grid">
         <div class="upload-section">
             <label><strong>Audio Source</strong></label>
-            <input type="file" name="audio_file" accept=".wav,.aiff,.flac,.ogg,.mp3"
-                   id="audio-upload" onchange="previewUploadedAudio(this)">
-            <span style="font-size: 0.85rem; color: var(--text-muted);">
-                Upload an audio file (WAV, MP3, FLAC, OGG; max {{ max_duration }}s), or leave empty to use the built-in sample.
-            </span>
+            <div class="source-mode-picker" role="radiogroup" aria-label="Audio source">
+                <label class="source-mode-option">
+                    <input type="radio" name="source_mode" value="builtin"
+                           {% if active_source_mode == 'builtin' %}checked{% endif %}>
+                    <span>Built-in Sample</span>
+                </label>
+                <label class="source-mode-option">
+                    <input type="radio" name="source_mode" value="upload"
+                           {% if active_source_mode == 'upload' %}checked{% endif %}>
+                    <span>Upload File</span>
+                </label>
+                <label class="source-mode-option">
+                    <input type="radio" name="source_mode" value="record"
+                           id="source-mode-record"
+                           {% if active_source_mode == 'record' %}checked{% endif %}>
+                    <span>Record Mic</span>
+                </label>
+            </div>
+
+            <div class="source-panel" id="upload-panel" {% if active_source_mode != 'upload' %}hidden{% endif %}>
+                <input type="file" name="audio_file" accept=".wav,.aiff,.flac,.ogg,.mp3"
+                       id="audio-upload" onchange="previewUploadedAudio(this)">
+                <div class="source-help">
+                    Upload an audio file (WAV, MP3, FLAC, OGG; max {{ max_duration }}s).
+                </div>
+            </div>
+
+            <div class="source-panel" id="record-panel" {% if active_source_mode != 'record' %}hidden{% endif %}>
+                <div class="record-controls">
+                    <button type="button" class="btn btn-secondary" id="record-start">Start Recording</button>
+                    <button type="button" class="btn btn-secondary" id="record-stop" disabled>Stop</button>
+                    <button type="button" class="btn btn-secondary" id="record-discard" disabled>Discard</button>
+                </div>
+                <div class="record-status" id="record-status" aria-live="polite">
+                    Record up to {{ max_duration }} seconds, then run the pipeline on your own voice.
+                </div>
+                <div class="source-help">
+                    Microphone audio stays in the browser until you click Run Pipeline. It is converted to WAV client-side before upload.
+                </div>
+            </div>
 
             <!-- Source audio preview player -->
-            <div class="source-preview">
+            <div class="source-preview"
+                 data-default-label="{{ default_source.name | e }}"
+                 data-default-meta="{{ default_source.duration }}s · {{ default_source.sr }} Hz"
+                 data-default-src="{{ url_for('serve_default_sample') }}"
+                 data-current-label="{% if results %}{{ results.source_info.name | e }}{% else %}{{ default_source.name | e }}{% endif %}"
+                 data-current-meta="{% if results %}{{ results.source_info.duration }}s · {{ results.source_info.sr }} Hz{% else %}{{ default_source.duration }}s · {{ default_source.sr }} Hz{% endif %}"
+                 data-current-src="{% if results %}{{ url_for('serve_audio', session_id=results.session_id, filename='0a_original.wav') }}{% else %}{{ url_for('serve_default_sample') }}{% endif %}"
+                 data-current-mode="{% if results %}{{ active_source_mode }}{% else %}builtin{% endif %}">
                 <div class="source-preview-label">
                     {% if results %}
                         <strong>{{ results.source_info.name }}</strong>
@@ -322,18 +364,23 @@ function showLoading() {
     document.getElementById('loading').classList.add('active');
 }
 
+function hideLoading() {
+    document.getElementById('loading').classList.remove('active');
+}
+
 function previewUploadedAudio(input) {
-    if (input.files && input.files[0]) {
-        var file = input.files[0];
-        var url = URL.createObjectURL(file);
-        var player = document.getElementById('source-player');
-        player.src = url;
-        player.load();
-        var label = document.querySelector('.source-preview-label strong');
-        if (label) label.textContent = file.name;
-        var meta = document.querySelector('.source-preview-label span');
-        if (meta) meta.textContent = '(uploaded, preview below)';
+    if (!input || !input.files || !input.files[0]) {
+        applyPreviewForMode(selectedSourceMode());
+        return;
     }
+
+    var file = input.files[0];
+    if (window.sigsalyRecorderState.uploadPreviewUrl) {
+        URL.revokeObjectURL(window.sigsalyRecorderState.uploadPreviewUrl);
+    }
+    window.sigsalyRecorderState.uploadPreviewUrl = URL.createObjectURL(file);
+    selectSourceMode('upload');
+    setSourcePreview(file.name, '(selected for upload)', window.sigsalyRecorderState.uploadPreviewUrl);
 }
 
 // Exclusive audio playback: starting one player pauses all others.
@@ -378,6 +425,473 @@ document.querySelectorAll('.tooltip').forEach(function(tip) {
         }
     });
 });
+
+var MAX_RECORD_SECONDS = {{ max_duration | tojson }};
+var sourcePreview = document.querySelector('.source-preview');
+var sourcePlayer = document.getElementById('source-player');
+var sourceLabel = document.querySelector('.source-preview-label strong');
+var sourceMeta = document.querySelector('.source-preview-label span');
+var sourceModeInputs = document.querySelectorAll('input[name="source_mode"]');
+var recordModeInput = document.getElementById('source-mode-record');
+var uploadInput = document.getElementById('audio-upload');
+var uploadPanel = document.getElementById('upload-panel');
+var recordPanel = document.getElementById('record-panel');
+var recordStartBtn = document.getElementById('record-start');
+var recordStopBtn = document.getElementById('record-stop');
+var recordDiscardBtn = document.getElementById('record-discard');
+var recordStatus = document.getElementById('record-status');
+var pipelineForm = document.getElementById('pipeline-form');
+
+window.sigsalyRecorderState = {
+    defaultPreview: {
+        label: sourcePreview.dataset.defaultLabel,
+        meta: sourcePreview.dataset.defaultMeta,
+        src: sourcePreview.dataset.defaultSrc
+    },
+    currentPreview: {
+        label: sourcePreview.dataset.currentLabel,
+        meta: sourcePreview.dataset.currentMeta,
+        src: sourcePreview.dataset.currentSrc,
+        mode: sourcePreview.dataset.currentMode || 'builtin'
+    },
+    uploadPreviewUrl: null,
+    recordedFile: null,
+    recordedInfo: null,
+    mediaRecorder: null,
+    mediaStream: null,
+    recordedChunks: [],
+    recordTimerId: null,
+    recordStartedAt: null,
+    discardPending: false
+};
+
+function selectedSourceMode() {
+    var checked = document.querySelector('input[name="source_mode"]:checked');
+    return checked ? checked.value : 'builtin';
+}
+
+function selectSourceMode(mode) {
+    sourceModeInputs.forEach(function(input) {
+        input.checked = (input.value === mode);
+    });
+    updateSourceModeUI();
+}
+
+function setSourcePreview(label, meta, src) {
+    if (sourceLabel) sourceLabel.textContent = label;
+    if (sourceMeta) sourceMeta.textContent = meta;
+    if (sourcePlayer) {
+        sourcePlayer.src = src;
+        sourcePlayer.load();
+    }
+}
+
+function applyPreviewForMode(mode) {
+    var state = window.sigsalyRecorderState;
+
+    if (mode === 'builtin') {
+        setSourcePreview(state.defaultPreview.label, state.defaultPreview.meta, state.defaultPreview.src);
+        return;
+    }
+
+    if (mode === 'upload') {
+        if (state.uploadPreviewUrl && uploadInput && uploadInput.files && uploadInput.files[0]) {
+            setSourcePreview(uploadInput.files[0].name, '(selected for upload)', state.uploadPreviewUrl);
+            return;
+        }
+        if (state.currentPreview.mode === 'upload') {
+            setSourcePreview(state.currentPreview.label, state.currentPreview.meta, state.currentPreview.src);
+            return;
+        }
+        setSourcePreview(state.defaultPreview.label, state.defaultPreview.meta, state.defaultPreview.src);
+        return;
+    }
+
+    if (state.recordedInfo && state.recordedInfo.objectUrl) {
+        setSourcePreview(state.recordedInfo.label, state.recordedInfo.meta, state.recordedInfo.objectUrl);
+        return;
+    }
+    if (state.currentPreview.mode === 'record') {
+        setSourcePreview(state.currentPreview.label, state.currentPreview.meta, state.currentPreview.src);
+        return;
+    }
+    setSourcePreview(state.defaultPreview.label, state.defaultPreview.meta, state.defaultPreview.src);
+}
+
+function setRecordStatus(message, statusClass) {
+    if (!recordStatus) return;
+    recordStatus.textContent = message;
+    recordStatus.classList.remove('is-error', 'is-recording');
+    if (statusClass) {
+        recordStatus.classList.add(statusClass);
+    }
+}
+
+function formatDuration(seconds) {
+    var totalSeconds = Math.max(0, Math.round(seconds));
+    var minutes = Math.floor(totalSeconds / 60);
+    var remainder = totalSeconds % 60;
+    return minutes + ':' + String(remainder).padStart(2, '0');
+}
+
+function updateRecordButtons() {
+    var state = window.sigsalyRecorderState;
+    var supportsRecording = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+    var isRecording = !!(state.mediaRecorder && state.mediaRecorder.state === 'recording');
+    if (recordStartBtn) recordStartBtn.disabled = !supportsRecording || isRecording;
+    if (recordStopBtn) recordStopBtn.disabled = !isRecording;
+    if (recordDiscardBtn) recordDiscardBtn.disabled = !isRecording && !state.recordedInfo;
+}
+
+function updateSourceModeUI() {
+    var mode = selectedSourceMode();
+    if (uploadPanel) uploadPanel.hidden = mode !== 'upload';
+    if (recordPanel) recordPanel.hidden = mode !== 'record';
+    applyPreviewForMode(mode);
+}
+
+function clearRecordTimer() {
+    var state = window.sigsalyRecorderState;
+    if (state.recordTimerId) {
+        clearInterval(state.recordTimerId);
+        state.recordTimerId = null;
+    }
+}
+
+function cleanupMediaStream() {
+    var state = window.sigsalyRecorderState;
+    if (state.mediaStream) {
+        state.mediaStream.getTracks().forEach(function(track) { track.stop(); });
+        state.mediaStream = null;
+    }
+    state.mediaRecorder = null;
+    state.recordedChunks = [];
+    state.recordStartedAt = null;
+    clearRecordTimer();
+}
+
+function clearRecordedSelection() {
+    var state = window.sigsalyRecorderState;
+    if (state.recordedInfo && state.recordedInfo.objectUrl) {
+        URL.revokeObjectURL(state.recordedInfo.objectUrl);
+    }
+    state.recordedFile = null;
+    state.recordedInfo = null;
+    state.discardPending = false;
+    updateRecordButtons();
+}
+
+function recorderMimeOptions() {
+    if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) {
+        return {};
+    }
+    var candidates = [
+        'audio/webm;codecs=opus',
+        'audio/ogg;codecs=opus',
+        'audio/mp4',
+        'audio/webm',
+        'audio/ogg'
+    ];
+    for (var i = 0; i < candidates.length; i += 1) {
+        if (MediaRecorder.isTypeSupported(candidates[i])) {
+            return { mimeType: candidates[i] };
+        }
+    }
+    return {};
+}
+
+function decodeAudioBuffer(audioContext, arrayBuffer) {
+    return new Promise(function(resolve, reject) {
+        var settled = false;
+        function finish(fn, value) {
+            if (settled) return;
+            settled = true;
+            fn(value);
+        }
+        try {
+            var maybePromise = audioContext.decodeAudioData(
+                arrayBuffer,
+                function(buffer) { finish(resolve, buffer); },
+                function(error) { finish(reject, error); }
+            );
+            if (maybePromise && typeof maybePromise.then === 'function') {
+                maybePromise.then(
+                    function(buffer) { finish(resolve, buffer); },
+                    function(error) { finish(reject, error); }
+                );
+            }
+        } catch (error) {
+            finish(reject, error);
+        }
+    });
+}
+
+function mixToMono(audioBuffer) {
+    var output = new Float32Array(audioBuffer.length);
+    var channelCount = audioBuffer.numberOfChannels;
+    for (var channel = 0; channel < channelCount; channel += 1) {
+        var channelData = audioBuffer.getChannelData(channel);
+        for (var i = 0; i < channelData.length; i += 1) {
+            output[i] += channelData[i] / channelCount;
+        }
+    }
+    return output;
+}
+
+function encodeMonoWav(samples, sampleRate) {
+    var buffer = new ArrayBuffer(44 + samples.length * 2);
+    var view = new DataView(buffer);
+
+    function writeString(offset, value) {
+        for (var i = 0; i < value.length; i += 1) {
+            view.setUint8(offset + i, value.charCodeAt(i));
+        }
+    }
+
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + samples.length * 2, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeString(36, 'data');
+    view.setUint32(40, samples.length * 2, true);
+
+    var offset = 44;
+    for (var j = 0; j < samples.length; j += 1) {
+        var sample = Math.max(-1, Math.min(1, samples[j]));
+        view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+        offset += 2;
+    }
+
+    return new Blob([buffer], { type: 'audio/wav' });
+}
+
+async function convertRecordingToWav(blob) {
+    var audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    try {
+        var arrayBuffer = await blob.arrayBuffer();
+        var audioBuffer = await decodeAudioBuffer(audioContext, arrayBuffer);
+        var monoSamples = mixToMono(audioBuffer);
+        var wavBlob = encodeMonoWav(monoSamples, audioBuffer.sampleRate);
+        return {
+            file: new File([wavBlob], 'microphone-recording.wav', {
+                type: 'audio/wav',
+                lastModified: Date.now()
+            }),
+            label: 'Microphone recording',
+            meta: audioBuffer.duration.toFixed(2) + 's · ' + audioBuffer.sampleRate + ' Hz',
+            durationSeconds: audioBuffer.duration,
+            sampleRate: audioBuffer.sampleRate
+        };
+    } finally {
+        if (audioContext.close) {
+            await audioContext.close();
+        }
+    }
+}
+
+function updateRecordingClock() {
+    var state = window.sigsalyRecorderState;
+    if (!state.recordStartedAt || !state.mediaRecorder || state.mediaRecorder.state !== 'recording') {
+        return;
+    }
+    var elapsedSeconds = (Date.now() - state.recordStartedAt) / 1000;
+    if (elapsedSeconds >= MAX_RECORD_SECONDS) {
+        stopRecording();
+        return;
+    }
+    setRecordStatus('Recording ' + formatDuration(elapsedSeconds) + ' / ' + formatDuration(MAX_RECORD_SECONDS), 'is-recording');
+}
+
+async function handleRecordingStop() {
+    var state = window.sigsalyRecorderState;
+    clearRecordTimer();
+
+    try {
+        if (state.discardPending) {
+            clearRecordedSelection();
+            setRecordStatus('Recording discarded.', '');
+            return;
+        }
+
+        var blobType = (state.mediaRecorder && state.mediaRecorder.mimeType) || 'audio/webm';
+        var recordedBlob = new Blob(state.recordedChunks, { type: blobType });
+        if (!recordedBlob.size) {
+            throw new Error('No audio was captured from the microphone.');
+        }
+
+        setRecordStatus('Processing microphone audio...', '');
+        clearRecordedSelection();
+        var converted = await convertRecordingToWav(recordedBlob);
+        converted.objectUrl = URL.createObjectURL(converted.file);
+        state.recordedFile = converted.file;
+        state.recordedInfo = converted;
+        setSourcePreview(converted.label, converted.meta, converted.objectUrl);
+        setRecordStatus('Microphone recording ready: ' + converted.meta, '');
+    } catch (error) {
+        clearRecordedSelection();
+        setRecordStatus('Recording could not be prepared: ' + error.message, 'is-error');
+        applyPreviewForMode('record');
+    } finally {
+        state.discardPending = false;
+        cleanupMediaStream();
+        updateRecordButtons();
+    }
+}
+
+async function startRecording() {
+    var state = window.sigsalyRecorderState;
+    if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder)) {
+        setRecordStatus('Microphone recording is not supported in this browser.', 'is-error');
+        return;
+    }
+    if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
+        return;
+    }
+
+    try {
+        state.discardPending = false;
+        state.mediaStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+                channelCount: 1,
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+            }
+        });
+        state.recordedChunks = [];
+        var options = recorderMimeOptions();
+        state.mediaRecorder = Object.keys(options).length ?
+            new MediaRecorder(state.mediaStream, options) :
+            new MediaRecorder(state.mediaStream);
+
+        state.mediaRecorder.addEventListener('dataavailable', function(event) {
+            if (event.data && event.data.size) {
+                state.recordedChunks.push(event.data);
+            }
+        });
+        state.mediaRecorder.addEventListener('stop', handleRecordingStop);
+        state.mediaRecorder.addEventListener('error', function(event) {
+            var message = (event.error && event.error.message) || 'Unknown recorder failure.';
+            setRecordStatus('Recording failed: ' + message, 'is-error');
+            cleanupMediaStream();
+            updateRecordButtons();
+        });
+
+        selectSourceMode('record');
+        state.recordStartedAt = Date.now();
+        state.mediaRecorder.start(250);
+        setRecordStatus('Recording 0:00 / ' + formatDuration(MAX_RECORD_SECONDS), 'is-recording');
+        state.recordTimerId = setInterval(updateRecordingClock, 200);
+        updateRecordButtons();
+    } catch (error) {
+        cleanupMediaStream();
+        updateRecordButtons();
+        setRecordStatus('Microphone access failed: ' + error.message, 'is-error');
+    }
+}
+
+function stopRecording() {
+    var state = window.sigsalyRecorderState;
+    if (!state.mediaRecorder || state.mediaRecorder.state !== 'recording') {
+        return;
+    }
+    clearRecordTimer();
+    setRecordStatus('Stopping recording...', '');
+    state.mediaRecorder.stop();
+    updateRecordButtons();
+}
+
+function discardRecording() {
+    var state = window.sigsalyRecorderState;
+    if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
+        state.discardPending = true;
+        stopRecording();
+        return;
+    }
+    clearRecordedSelection();
+    setRecordStatus('Recording discarded.', '');
+    applyPreviewForMode(selectedSourceMode());
+}
+
+sourceModeInputs.forEach(function(input) {
+    input.addEventListener('change', updateSourceModeUI);
+});
+
+if (recordStartBtn) {
+    recordStartBtn.addEventListener('click', startRecording);
+}
+if (recordStopBtn) {
+    recordStopBtn.addEventListener('click', stopRecording);
+}
+if (recordDiscardBtn) {
+    recordDiscardBtn.addEventListener('click', discardRecording);
+}
+
+pipelineForm.addEventListener('submit', function(event) {
+    var state = window.sigsalyRecorderState;
+    if (selectedSourceMode() !== 'record') {
+        return;
+    }
+
+    if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
+        event.preventDefault();
+        setRecordStatus('Stop the recording before running the pipeline.', 'is-error');
+        return;
+    }
+
+    if (!state.recordedFile) {
+        event.preventDefault();
+        setRecordStatus('Please record audio before running the pipeline.', 'is-error');
+        return;
+    }
+
+    event.preventDefault();
+    showLoading();
+    var formData = new FormData(pipelineForm);
+    formData.set('audio_file', state.recordedFile, state.recordedFile.name);
+    fetch(pipelineForm.action, {
+        method: 'POST',
+        body: formData,
+        credentials: 'same-origin'
+    }).then(function(response) {
+        return response.text();
+    }).then(function(html) {
+        document.open();
+        document.write(html);
+        document.close();
+    }).catch(function(error) {
+        hideLoading();
+        setRecordStatus('Upload failed: ' + error.message, 'is-error');
+    });
+});
+
+window.addEventListener('beforeunload', function() {
+    var state = window.sigsalyRecorderState;
+    if (state.uploadPreviewUrl) {
+        URL.revokeObjectURL(state.uploadPreviewUrl);
+    }
+    if (state.recordedInfo && state.recordedInfo.objectUrl) {
+        URL.revokeObjectURL(state.recordedInfo.objectUrl);
+    }
+});
+
+if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder)) {
+    if (recordModeInput) recordModeInput.disabled = true;
+    if (selectedSourceMode() === 'record') {
+        selectSourceMode('builtin');
+    }
+    setRecordStatus('Microphone recording is unavailable in this browser. Upload a file instead.', 'is-error');
+}
+
+updateSourceModeUI();
+updateRecordButtons();
 </script>
 
 </body>

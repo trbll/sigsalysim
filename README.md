@@ -64,7 +64,7 @@ sigsalysim/
 | Version | Status | Description |
 |---------|--------|-------------|
 | **v1 — CLI Pipeline** | ✅ Complete | Python modules + CLI script generating 18 audio files across 6 stages with quantitative diagnostics |
-| **v2 — Web Dashboard** | ✅ Complete | Flask app wrapping v1: upload audio, tweak parameters (SNR, carrier freq, desync), view spectrograms and hear all outputs in the browser |
+| **v2 — Web Dashboard** | ✅ Complete | Flask app wrapping v1: use the built-in sample, upload audio, or record in-browser; tweak parameters (SNR, carrier freq, desync), view spectrograms and hear all outputs in the browser |
 | **v3 — Interactive Visualization** | 🔜 Planned | Spinning vinyl record synchronization, real-time cracking workbench, FSK transmission simulation, dual turntable crossover, potentially networked two-party experience |
 
 ## Quick Start
@@ -98,7 +98,7 @@ pip install gunicorn                  # one-time setup
 
 Students connect to `http://your-hostname.local:3001` (or your IP address). Each worker handles one pipeline run at a time — with 8 workers, 8 students can process simultaneously; additional requests queue automatically. See `serve.sh` for recommended worker counts by class size.
 
-Open the URL in your browser. Upload a WAV file (or use the built-in sample), adjust parameters with sliders, and click **Run Pipeline**. All 17 audio outputs appear with spectrograms, audio players, and diagnostic text. Uploaded audio is limited to 120 seconds.
+Open the URL in your browser. Use the built-in sample, upload an audio file, or record from your microphone in-browser; adjust parameters with sliders, and click **Run Pipeline**. All 17 audio outputs appear with spectrograms, audio players, and diagnostic text. Custom audio is limited to 120 seconds.
 
 **Features:**
 - Source audio preview player (always visible for A/B comparison)
