@@ -101,7 +101,7 @@
         <div class="params-section">
             <div class="slider-group">
                 <label>
-                    <span class="tooltip">Telephone Line SNR<span class="tooltip-text">Signal-to-Noise Ratio: measures how much louder the signal is than the background noise. Every 10 dB increase means noise power drops by 10x. A 1940s transatlantic HF radio link was roughly 20-25 dB SNR — much noisier than a domestic phone line, due to atmospheric interference, ionospheric fading, and crowded shortwave bands.</span></span>
+                    <span class="tooltip">Transmission SNR<span class="tooltip-text">Signal-to-Noise Ratio: measures how much louder the signal is than the background noise. Every 10 dB increase means noise power drops by 10x. A 1940s transatlantic HF radio link was roughly 20-25 dB SNR — atmospheric interference, ionospheric fading, and crowded shortwave bands all degraded the signal.</span></span>
                     <output id="snr-val">{{ results.params.snr_db if results else 22 }}</output> dB
                 </label>
                 <input type="range" name="snr_db" min="10" max="50"
