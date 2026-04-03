@@ -67,20 +67,11 @@
         </div>
     </section>
 
-    <!-- Wire out of sender (CLEAN — no noise yet) -->
-    <div class="wire-v wire-tap"
-         data-variant-a3="a3_scrambled" data-variant-sigsaly="sigsaly_encrypted"
-         data-label-a3="Scrambled output (clean)" data-label-sigsaly="Encrypted output (clean)">
-        <div class="wire-flow">▼</div>
-    </div>
-
-    <!-- Noise gets added here -->
-    <div class="noise-label">+ LINE NOISE (SNR {{ manifest.params.snr_db if manifest else 28 }} dB)</div>
-
-    <!-- Wire entering ocean (WITH noise — this is what travels) -->
+    <!-- Wire from terminal to ocean — noise is added along this stretch -->
+    <div class="noise-label">↓ + LINE NOISE (SNR {{ manifest.params.snr_db if manifest else 28 }} dB) ↓</div>
     <div class="wire-v wire-tap cable-segment"
          data-variant-a3="a3_on_wire" data-variant-sigsaly="sigsaly_on_wire"
-         data-label-a3="Scrambled + noise (on the wire)" data-label-sigsaly="Encrypted + noise (on the wire)">
+         data-label-a3="On the wire (scrambled + noise)" data-label-sigsaly="On the wire (encrypted + noise)">
         <div class="wire-flow">▼</div>
     </div>
 

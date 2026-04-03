@@ -76,11 +76,6 @@ const VinylInteraction = (() => {
         // Snap to nearest available offset
         const snapped = snapToNearest(Math.round(currentOffset));
         setOffset(snapped);
-        // Resume spinning if at offset 0 (in sync)
-        if (recordEl && snapped === 0) {
-            recordEl.classList.add('spinning');
-            recordEl.style.transform = '';
-        }
     }
 
     function getAngle(e) {
@@ -107,15 +102,13 @@ const VinylInteraction = (() => {
         currentOffset = offset;
         updateDisplay();
 
-        // Visual: spin normally at 0, show static rotation at offset
+        // Record always spins — at offset it spins from a rotated start position
+        // using CSS animation-delay to visually offset it from the sender record
         if (recordEl) {
-            if (offset === 0) {
-                recordEl.classList.add('spinning');
-                recordEl.style.transform = '';
-            } else {
-                recordEl.classList.remove('spinning');
-                recordEl.style.transform = `rotate(${offset * 7.2}deg)`;
-            }
+            recordEl.classList.add('spinning');
+            // Use negative animation-delay to offset the phase of the spin
+            // This makes the record visually "ahead" or "behind" the sender
+            recordEl.style.animationDelay = `${-offset * 0.04}s`;
         }
 
         // If currently playing decrypt audio, switch to new offset
