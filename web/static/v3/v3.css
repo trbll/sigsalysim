@@ -408,9 +408,10 @@ body {
 
 .ocean-body {
     background: var(--ocean);
-    padding: 1.5rem 1rem;
+    padding: 2.5rem 1rem;
     position: relative;
     overflow: hidden;
+    min-height: 200px;
 }
 
 .wave {
@@ -479,7 +480,7 @@ body {
 
 .german-tap {
     width: 100%;
-    height: 32px;
+    height: 48px;
     margin-bottom: 0.4rem;
 }
 
@@ -545,16 +546,42 @@ body {
     font-style: italic;
 }
 
-/* ── Listening Status ────────────────────────────── */
+/* ── Listening Toast (fixed position) ────────────── */
 
-.listening {
-    text-align: center;
-    padding: 0.75rem;
+.listening-toast {
+    position: fixed;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface);
+    border: 1px solid var(--terminal-border);
+    border-radius: 8px;
+    padding: 0.5rem 1.2rem;
     font-family: var(--mono);
     font-size: 0.8rem;
     color: var(--text-muted);
+    z-index: 100;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    transition: all 0.2s;
+    white-space: nowrap;
 }
-.listening.active { color: var(--accent); }
+.listening-toast.active {
+    color: var(--accent);
+    border-color: var(--accent-dim);
+}
+
+/* ── Stage Glow (active signal path) ────────────── */
+
+.stage-block.lit .stage-unit,
+.vinyl-block.lit .vinyl-record {
+    box-shadow: 0 0 14px var(--wire-glow), 0 0 4px var(--accent);
+    border-color: var(--accent);
+}
+
+.stage-block.lit .stage-unit::after {
+    opacity: 1;
+    box-shadow: 0 0 6px var(--accent);
+}
 
 /* ── Mode visibility ─────────────────────────────── */
 
@@ -569,3 +596,6 @@ body:not([data-mode]) .sigsaly-only { display: none !important; }
     .vinyl-record { width: 80px; height: 80px; }
     .stage-unit { width: 70px; height: 45px; }
 }
+
+/* Padding for fixed toast */
+.simulator { padding-bottom: 3.5rem; }

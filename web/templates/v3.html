@@ -34,7 +34,7 @@
 
             <!-- A-3 mode: just SCRAMBLE -->
             <div class="terminal-stages a3-only">
-                <div class="stage-block">
+                <div class="stage-block" id="stage-scramble">
                     <div class="stage-name">SCRAMBLE</div>
                     <div class="stage-unit"></div>
                 </div>
@@ -42,21 +42,21 @@
 
             <!-- SIGSALY mode: VOCODER + ENCRYPT + KEY RECORD -->
             <div class="terminal-stages sigsaly-only">
-                <div class="stage-block">
+                <div class="stage-block" id="stage-vocoder">
                     <div class="stage-name">VOCODER</div>
                     <div class="stage-unit"></div>
                 </div>
                 <div class="wire-h wire-tap" data-variant="vocoded" data-label="Vocoded speech">
                     <div class="wire-flow">▶</div>
                 </div>
-                <div class="stage-block">
+                <div class="stage-block" id="stage-encrypt">
                     <div class="stage-name">ENCRYPT</div>
                     <div class="stage-unit"></div>
                 </div>
                 <div class="wire-h wire-tap" data-variant="key_record" data-label="Key record (random noise)">
                     <div class="wire-flow">◀</div>
                 </div>
-                <div class="vinyl-block">
+                <div class="vinyl-block" id="stage-sender-key">
                     <div class="vinyl-record spinning" id="sender-record">
                         <div class="vinyl-grooves"></div>
                         <div class="vinyl-center">KEY</div>
@@ -129,7 +129,7 @@
 
             <!-- A-3 mode: just UNSCRAMBLE -->
             <div class="terminal-stages a3-only">
-                <div class="stage-block">
+                <div class="stage-block" id="stage-unscramble">
                     <div class="stage-name">UNSCRAMBLE</div>
                     <div class="stage-unit"></div>
                 </div>
@@ -137,14 +137,14 @@
 
             <!-- SIGSALY mode: DECRYPT + KEY RECORD -->
             <div class="terminal-stages sigsaly-only">
-                <div class="stage-block">
+                <div class="stage-block" id="stage-decrypt">
                     <div class="stage-name">DECRYPT</div>
                     <div class="stage-unit"></div>
                 </div>
                 <div class="wire-h wire-tap" data-variant="key_record" data-label="Key record (identical copy)">
                     <div class="wire-flow">◀</div>
                 </div>
-                <div class="vinyl-block">
+                <div class="vinyl-block" id="stage-receiver-key">
                     <div class="vinyl-record spinning vinyl-draggable" id="receiver-record">
                         <div class="vinyl-grooves"></div>
                         <div class="vinyl-center">KEY</div>
@@ -167,8 +167,8 @@
     </div>
     <div class="source-label">RECEIVER OUTPUT</div>
 
-    <!-- Status -->
-    <div class="listening" id="listening-label">
+    <!-- Fixed toast for currently playing audio -->
+    <div class="listening-toast" id="listening-label">
         <span id="listening-text">Click any wire to tap in</span>
     </div>
 

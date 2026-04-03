@@ -61,6 +61,7 @@
                 wire.classList.add('tapped');
                 CrackingWorkbench.startCracking(mode());
                 setLabel('🎧 Cracking active — drag slider to search');
+                highlightStages(mode() === 'a3' ? 'a3_scrambled' : 'sigsaly_encrypted');
                 return;
             }
 
@@ -90,6 +91,7 @@
             wire.classList.add('tapped');
             AudioEngine.play(variant, label, true);
             setLabel('🔊 ' + label);
+            highlightStages(variant);
         });
     });
 
@@ -116,9 +118,10 @@
         });
 
         // Always start playback — vinyl already stopped audio on mousedown
-        AudioEngine.stop(); // Ensure clean state
+        AudioEngine.stop();
         AudioEngine.play(newVariant, newLabel, true);
         setLabel('🔊 ' + newLabel);
+        highlightStages(newVariant);
 
         // Mark the receiver output wire as tapped
         clearTapped();
@@ -128,10 +131,51 @@
         });
     });
 
+    // ── Stage highlighting ────────────────────────────────────
+    // Map each audio variant to which stage blocks should glow.
+    // Shows the signal path that produced the audio you're hearing.
+    const STAGE_MAP = {
+        // A-3 sender
+        'original':        [],
+        'a3_scrambled':    ['stage-scramble'],
+        'a3_on_wire':      ['stage-scramble'],
+        'a3_unscrambled':  ['stage-scramble', 'stage-unscramble'],
+        // SIGSALY sender
+        'vocoded':         ['stage-vocoder'],
+        'key_record':      ['stage-sender-key'],
+        'sigsaly_encrypted': ['stage-vocoder', 'stage-encrypt', 'stage-sender-key'],
+        'sigsaly_on_wire':   ['stage-vocoder', 'stage-encrypt', 'stage-sender-key'],
+        // SIGSALY receiver (all decrypted variants)
+        'sigsaly_decrypted': ['stage-vocoder', 'stage-encrypt', 'stage-sender-key', 'stage-decrypt', 'stage-receiver-key'],
+    };
+
+    function highlightStages(variant) {
+        // Clear all
+        document.querySelectorAll('.stage-block, .vinyl-block').forEach(el => el.classList.remove('lit'));
+
+        if (!variant) return;
+
+        // Check exact match first, then prefix match (for sigsaly_decrypted_N)
+        let stages = STAGE_MAP[variant];
+        if (!stages) {
+            // Try prefix match
+            for (const [key, val] of Object.entries(STAGE_MAP)) {
+                if (variant.startsWith(key)) { stages = val; break; }
+            }
+        }
+        if (!stages) return;
+
+        stages.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('lit');
+        });
+    }
+
     // ── Helpers ─────────────────────────────────────────────
 
     function clearTapped() {
         document.querySelectorAll('.wire-tap').forEach(w => w.classList.remove('tapped'));
+        highlightStages(null);
     }
 
     function setLabel(text) {
