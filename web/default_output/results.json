@@ -1,5 +1,5 @@
 {
-  "session_id": "5ba8b925f948",
+  "session_id": "a7f616ebacf0",
   "session_dir": null,
   "source_info": {
     "samples": 252288,
@@ -40,8 +40,8 @@
         }
       ],
       "diagnostics": {
-        "correlation_telephone": -0.0978,
-        "text": "Signal correlation (original vs over-the-air): -0.0978\nSNR: 22 dB (noise power is 1/158th of signal)\nBandwidth: 300-3400 Hz (voice channel standard)"
+        "correlation_telephone": -0.098,
+        "text": "Signal correlation (original vs over-the-air): -0.098\nSNR: 22 dB (noise power is 1/158th of signal)\nBandwidth: 300-3400 Hz (voice channel standard)"
       }
     },
     {
@@ -122,7 +122,7 @@
         "n_voiced": 107,
         "n_unvoiced": 178,
         "compression_ratio": "74:1",
-        "correlation_vocoded": -0.0002,
+        "correlation_vocoded": -0.0022,
         "level_distribution": {
           "0": 473,
           "1": 542,
@@ -131,7 +131,7 @@
           "4": 389,
           "5": 437
         },
-        "text": "Frames: 285 at 50 fps (5.70s)\nVoiced: 107/285 (38%), Unvoiced: 178/285 (62%)\nCompression: 876:1 (44100 samples/sec -> 600 values/sec)\nQuantization: 6 levels per band (10 bands)\nLevel distribution: L0=473, L1=542, L2=509, L3=500, L4=389, L5=437\nCorrelation (original vs vocoded): -0.0002\n\nThe robotic quality comes from coarse quantization (6 levels\nvs ~65,000 in 16-bit audio) and simplified excitation (pulse train\ninstead of real glottal waveform)."
+        "text": "Frames: 285 at 50 fps (5.70s)\nVoiced: 107/285 (38%), Unvoiced: 178/285 (62%)\nCompression: 876:1 (44100 samples/sec -> 600 values/sec)\nQuantization: 6 levels per band (10 bands)\nLevel distribution: L0=473, L1=542, L2=509, L3=500, L4=389, L5=437\nCorrelation (original vs vocoded): -0.0022\n\nThe robotic quality comes from coarse quantization (6 levels\nvs ~65,000 in 16-bit audio) and simplified excitation (pulse train\ninstead of real glottal waveform)."
       }
     },
     {
@@ -172,7 +172,7 @@
         }
       ],
       "diagnostics": {
-        "correlation_encrypted": 0.0007,
+        "correlation_encrypted": 0.0024,
         "original_encrypted_correlation": 0.0066,
         "encrypted_distribution": {
           "0": 478,
@@ -182,7 +182,7 @@
           "4": 469,
           "5": 499
         },
-        "text": "Correlation (original vs encrypted audio): 0.0007 (should be ~0.0)\nCorrelation (original params vs encrypted params): 0.0066\nEncrypted level distribution: L0=478, L1=486, L2=468, L3=450, L4=469, L5=499\n  (Should be ~uniform: ~475 each)\n\nThe encrypted values are uniformly distributed -- every level (0-5)\nappears with roughly equal frequency, regardless of what the original\nspeech contained. This is the hallmark of good encryption."
+        "text": "Correlation (original vs encrypted audio): 0.0024 (should be ~0.0)\nCorrelation (original params vs encrypted params): 0.0066\nEncrypted level distribution: L0=478, L1=486, L2=468, L3=450, L4=469, L5=499\n  (Should be ~uniform: ~475 each)\n\nThe encrypted values are uniformly distributed -- every level (0-5)\nappears with roughly equal frequency, regardless of what the original\nspeech contained. This is the hallmark of good encryption."
       }
     },
     {
@@ -208,9 +208,9 @@
       "diagnostics": {
         "roundtrip_bands": true,
         "roundtrip_pitch": true,
-        "correlation_decrypted_vs_vocoded": 0.0629,
-        "correlation_decrypted_vs_original": -0.0018,
-        "text": "Roundtrip verification:\n  Band levels:  PERFECT -- every value matches\n  Pitch levels: PERFECT -- every value matches\n  Total values checked: 2850 bands + 285 pitch = 3135\n\nAudio waveform similarity:\n  Decrypted vs vocoded (Stage 2):  0.0629\n  Decrypted vs original (Stage 0): -0.0018\n\n  Why isn't decrypted-vs-vocoded closer to 1.0? The vocoder\n  PARAMETERS are recovered perfectly (verified above), but the audio\n  waveform differs because the resynthesizer uses random white noise\n  for unvoiced sounds (\"s\", \"f\", \"sh\"). Each synthesis run generates\n  different noise samples, so the waveforms aren't identical even\n  though they sound the same to human ears. This is the nature of\n  parametric coding: the parameters are exact, the rendering varies.\n  (Listen to both -- they should sound essentially identical.)"
+        "correlation_decrypted_vs_vocoded": 0.0655,
+        "correlation_decrypted_vs_original": -0.0013,
+        "text": "Roundtrip verification:\n  Band levels:  PERFECT -- every value matches\n  Pitch levels: PERFECT -- every value matches\n  Total values checked: 2850 bands + 285 pitch = 3135\n\nAudio waveform similarity:\n  Decrypted vs vocoded (Stage 2):  0.0655\n  Decrypted vs original (Stage 0): -0.0013\n\n  Why isn't decrypted-vs-vocoded closer to 1.0? The vocoder\n  PARAMETERS are recovered perfectly (verified above), but the audio\n  waveform differs because the resynthesizer uses random white noise\n  for unvoiced sounds (\"s\", \"f\", \"sh\"). Each synthesis run generates\n  different noise samples, so the waveforms aren't identical even\n  though they sound the same to human ears. This is the nature of\n  parametric coding: the parameters are exact, the rendering varies.\n  (Listen to both -- they should sound essentially identical.)"
       }
     },
     {
@@ -227,8 +227,8 @@
         }
       ],
       "diagnostics": {
-        "correlation_crack_attempt": -0.0017,
-        "text": "Correlation (original vs crack attempt): -0.0017\nCompare to successful A-3 crack: 0.0208\n\nThe spectral analysis technique that broke A-3 finds nothing here.\nThere is no single parameter to guess -- the key has 5,896\nindependent random values. Brute-forcing all possibilities would\nrequire trying 6^5896 combinations -- a number\nfar larger than the atoms in the observable universe.\n\nSee: Shannon, C.E. (1949). \"Communication Theory of Secrecy Systems.\"\nhttps://pages.cs.wisc.edu/~rist/642-spring-2014/shannon-secrecy.pdf"
+        "correlation_crack_attempt": 0.0051,
+        "text": "Correlation (original vs crack attempt): 0.0051\nCompare to successful A-3 crack: 0.0208\n\nThe spectral analysis technique that broke A-3 finds nothing here.\nThere is no single parameter to guess -- the key has 5,896\nindependent random values. Brute-forcing all possibilities would\nrequire trying 6^5896 combinations -- a number\nfar larger than the atoms in the observable universe.\n\nSee: Shannon, C.E. (1949). \"Communication Theory of Secrecy Systems.\"\nhttps://pages.cs.wisc.edu/~rist/642-spring-2014/shannon-secrecy.pdf"
       }
     },
     {
@@ -289,8 +289,8 @@
   ],
   "summary": {
     "a3_crack_correlation": 0.0208,
-    "sigsaly_encrypted_correlation": 0.0007,
-    "sigsaly_crack_attempt_correlation": -0.0017,
+    "sigsaly_encrypted_correlation": 0.0024,
+    "sigsaly_crack_attempt_correlation": 0.0051,
     "roundtrip_perfect": true
   },
   "modern_security": {
