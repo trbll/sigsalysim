@@ -7,8 +7,11 @@ all audio — whether original, scrambled, or encrypted — traveled over
 lines like this. The enemy could tap these lines and hear whatever was sent.
 
 Historical context:
-  Transatlantic calls in the 1940s traveled via radio links and undersea
-  cables, passing through multiple vacuum-tube amplifier/repeater stations.
+  Transatlantic voice calls in the 1940s traveled via HF (shortwave) radio
+  bounced off the ionosphere — undersea cables of the era could only carry
+  telegraph pulses (the first voice-capable transatlantic cable, TAT-1,
+  wasn't laid until 1956). The radio path introduced noise from atmospheric
+  interference, fading, and the vacuum-tube equipment at each end.
   Each station added slight noise and nonlinear distortion. The usable
   bandwidth was limited to about 300-3400 Hz (the "telephone bandwidth"
   standard that persisted into the digital age).

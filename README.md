@@ -6,14 +6,14 @@ Built for students studying **IoT Security and Cybersecurity** — SIGSALY is a 
 
 ## What is SIGSALY?
 
-SIGSALY was the first digital, encrypted voice communication system. Before SIGSALY, the Allies used the **A-3 scrambler**, a multi-band audio scrambling system. The Germans cracked it routinely using spectral analysis by 1941. (This simulator models A-3 with a simplified frequency-inversion demo that illustrates the same core vulnerability: speech structure survives the transformation.)
+SIGSALY was the first digital, encrypted voice communication system. Transatlantic voice calls traveled via HF (shortwave) radio — undersea cables of the 1940s could only carry telegraph pulses. Before SIGSALY, the Allies used the **A-3 scrambler**, a multi-band audio scrambling system. German listening stations on the Dutch coast cracked it routinely using spectral analysis by 1941. (This simulator models A-3 with a simplified frequency-inversion demo that illustrates the same core vulnerability: speech structure survives the transformation.)
 
 SIGSALY's breakthrough was a fundamentally different approach:
 
 1. **Vocoder** — Decompose speech into 10 frequency band amplitudes + pitch (50 times/sec)
 2. **Quantize** — Map each parameter to 6 discrete levels (0–5) using companding
 3. **Encrypt** — Subtract a random key value (mod 6) from each parameter
-4. **Transmit** — Send encrypted values over the phone line
+4. **Transmit** — Send encrypted values over HF radio
 5. **Decrypt** — Add the same key value (mod 6) at the receiver
 6. **Resynthesize** — Feed decrypted parameters into the vocoder to produce audible speech
 

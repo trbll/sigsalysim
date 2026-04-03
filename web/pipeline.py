@@ -134,11 +134,13 @@ def run_web_pipeline(input_wav_path, params=None):
         'description': (
             'During WWII, Allied leaders needed to coordinate across the Atlantic '
             '-- but long-distance phone calls traveled over '
-            + _tip('radio links', 'Transatlantic calls used HF (high-frequency) radio '
-                   'relays bounced off the ionosphere. These signals could be intercepted '
-                   'by anyone with a radio receiver tuned to the right frequency.')
-            + ' and cables that anyone could tap. Here\'s the original voice, and what it sounded like '
-            'after traveling through a 1940s phone line: '
+            + _tip('HF radio', 'Transatlantic voice calls used high-frequency (shortwave) radio '
+                   'bounced off the ionosphere. Undersea cables existed but could only carry '
+                   'telegraph pulses — the first transatlantic telephone cable (TAT-1) wasn\'t '
+                   'laid until 1956. Radio signals could be intercepted by anyone with a '
+                   'receiver tuned to the right frequency.')
+            + ' that anyone could intercept. Here\'s the original voice, and what it sounded like '
+            'after traveling over a 1940s HF radio link: '
             + _tip('bandlimited', 'A bandpass filter removes all frequencies outside a range. '
                    'Telephone lines only carried 300-3400 Hz -- enough for speech intelligibility, '
                    'but it strips out the deep bass and crisp high frequencies, making voices sound "thin."')
@@ -448,7 +450,7 @@ def run_web_pipeline(input_wav_path, params=None):
                    'clear horizontal bands (formants) and vertical gaps (silences). Encrypted audio '
                    'shows uniform color -- no structure at all.')
             + ' to the original: no speech structure remains. This is what '
-            'travels over the phone line.'
+            'gets transmitted over HF radio.'
         ),
         'outputs': [
             {**meta_4a, 'label': 'Encrypted (eavesdropper hears)', 'spectrogram': '4a_sigsaly_encrypted.png'},

@@ -21,9 +21,11 @@
             so Roosevelt and Churchill could talk without the Germans listening in.
         </p>
         <p>
-            Before SIGSALY, the Allies used the <strong>A-3 scrambler</strong> to obscure phone calls.
+            Before SIGSALY, the Allies used the <strong>A-3 scrambler</strong> to obscure voice calls sent over
+            transatlantic HF (shortwave) radio — the only way to carry voice across the Atlantic, since undersea cables
+            of the era could only handle telegraph pulses.
             The real A-3 was a multi-band scrambling system; this simulator models the core idea with a simplified frequency-inversion demo.
-            Either way, the Germans cracked it routinely using
+            Either way, German listening stations on the Dutch coast cracked it routinely using
             <span class="tooltip">spectral analysis<span class="tooltip-text">Analyzing the frequency content of a signal. Speech has distinctive patterns (formant peaks, 1/f energy rolloff) that survive simple transformations like frequency inversion. If the pattern is still there, the signal can be recovered.</span></span>.
             SIGSALY replaced this with a fundamentally different approach: digitize speech with a
             <span class="tooltip">vocoder<span class="tooltip-text">A "voice coder" that decomposes speech into parameters: 10 frequency band amplitudes, a pitch value, and a voiced/unvoiced flag, sampled 50 times per second. Invented by Homer Dudley at Bell Labs in 1939. The numeric parameters (10 bands + pitch) are what get encrypted via modular arithmetic.</span></span>,
