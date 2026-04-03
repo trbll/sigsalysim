@@ -1,47 +1,38 @@
 /**
- * v3 Cracking Workbench
- * ======================
- * Real-time frequency inversion using Web Audio API.
- * In A-3 mode, the German listening post can sweep a carrier frequency
- * slider and hear the scrambled signal unscramble when they find the
- * right frequency. In SIGSALY mode, no carrier frequency works.
+ * v3 Cracking Workbench — Real-Time Frequency Inversion
+ * ======================================================
+ * When the German listening post wire is tapped in A-3 mode, this module
+ * does real-time frequency inversion using Web Audio API. The student
+ * drags a carrier frequency slider and hears the scrambled signal
+ * unscramble when they find the right frequency.
  *
- * The frequency inversion is done entirely client-side:
- *   1. Load the "on wire" audio buffer
- *   2. Create an oscillator at the carrier frequency
- *   3. Modulate the audio with the oscillator (ring modulation)
- *   4. Lowpass filter to keep only the inverted baseband
- *
- * This is the same math as sigsaly/scrambler.py but in real-time Web Audio.
+ * The math: multiply the signal by cos(2π * carrier * t), then lowpass
+ * filter. Same as sigsaly/scrambler.py but in real-time audio nodes.
  */
 
 const CrackingWorkbench = (() => {
     let isActive = false;
     let sourceNode = null;
     let oscillator = null;
-    let gainNode = null;
+    let modulatorGain = null;
     let filterNode = null;
+    let outputGain = null;
     let carrierFreq = 1000;
 
-    const slider = () => document.getElementById('crack-slider');
-    const freqDisplay = () => document.getElementById('crack-freq-display');
-    const statusEl = () => document.getElementById('crack-status');
-
     function init() {
-        const s = slider();
-        if (!s) return;
+        const slider = document.getElementById('crack-slider');
+        if (!slider) return;
 
-        s.addEventListener('input', (e) => {
+        slider.addEventListener('input', (e) => {
             carrierFreq = parseInt(e.target.value);
-            const d = freqDisplay();
-            if (d) d.textContent = carrierFreq;
+            const display = document.getElementById('crack-freq-display');
+            if (display) display.textContent = carrierFreq;
 
+            // Update audio nodes in real-time
             if (isActive && oscillator) {
-                oscillator.frequency.setValueAtTime(carrierFreq, AudioEngine.getContext().currentTime);
-                filterNode.frequency.setValueAtTime(
-                    Math.min(carrierFreq, 4000),
-                    AudioEngine.getContext().currentTime
-                );
+                const ctx = AudioEngine.getContext();
+                oscillator.frequency.setValueAtTime(carrierFreq, ctx.currentTime);
+                filterNode.frequency.setValueAtTime(Math.min(carrierFreq, 4000), ctx.currentTime);
             }
 
             updateStatus();
@@ -54,47 +45,52 @@ const CrackingWorkbench = (() => {
         const ctx = AudioEngine.getContext();
         if (!ctx) return;
 
-        // Get the appropriate "on wire" buffer based on mode
         const bufferName = mode === 'a3' ? 'a3_on_wire' : 'sigsaly_on_wire';
         const buffer = AudioEngine.getBuffer(bufferName);
-        if (!buffer) return;
+        if (!buffer) {
+            console.warn('CrackingWorkbench: no buffer for', bufferName);
+            return;
+        }
 
-        // Stop the main audio engine playback
+        // Stop main audio engine
         AudioEngine.stop();
 
-        // Resume context
         if (ctx.state === 'suspended') ctx.resume();
 
-        // Create the processing chain:
-        // source -> gain(modulate with oscillator) -> lowpass -> destination
+        // Source: the intercepted signal, looping
         sourceNode = ctx.createBufferSource();
         sourceNode.buffer = buffer;
-        sourceNode.loop = true; // Loop for continuous cracking exploration
+        sourceNode.loop = true;
 
-        // Ring modulation: multiply the signal by a cosine at the carrier frequency
-        // Web Audio doesn't have a direct multiply node, so we use a trick:
-        // connect source to a gain node whose gain is modulated by an oscillator
-        gainNode = ctx.createGain();
-        gainNode.gain.value = 0; // Will be modulated by oscillator
+        // Modulation chain for frequency inversion:
+        // source → modulatorGain (gain modulated by oscillator) → filter → output
 
-        // Oscillator for modulation
+        // The gain node whose gain parameter is modulated by the oscillator
+        // This creates ring modulation (AM), which shifts frequencies
+        modulatorGain = ctx.createGain();
+        modulatorGain.gain.value = 0; // Will be driven by oscillator
+
+        // Oscillator drives the gain parameter
         oscillator = ctx.createOscillator();
         oscillator.type = 'cosine';
         oscillator.frequency.value = carrierFreq;
+        oscillator.connect(modulatorGain.gain);
 
-        // Connect oscillator to gain's gain parameter (this creates AM/ring modulation)
-        oscillator.connect(gainNode.gain);
-
-        // Lowpass filter to remove the upper sideband
+        // Lowpass filter removes the upper sideband
         filterNode = ctx.createBiquadFilter();
         filterNode.type = 'lowpass';
         filterNode.frequency.value = Math.min(carrierFreq, 4000);
         filterNode.Q.value = 0.7;
 
-        // Wire it up: source -> gain (modulated) -> filter -> speakers
-        sourceNode.connect(gainNode);
-        gainNode.connect(filterNode);
-        filterNode.connect(ctx.destination);
+        // Output gain for volume control
+        outputGain = ctx.createGain();
+        outputGain.gain.value = 2.0; // Boost — modulation reduces level
+
+        // Wire: source → modulatorGain → filter → outputGain → speakers
+        sourceNode.connect(modulatorGain);
+        modulatorGain.connect(filterNode);
+        filterNode.connect(outputGain);
+        outputGain.connect(ctx.destination);
 
         sourceNode.start(0);
         oscillator.start(0);
@@ -104,55 +100,45 @@ const CrackingWorkbench = (() => {
     }
 
     function stopCracking() {
-        if (sourceNode) {
-            try { sourceNode.stop(); } catch (e) {}
-            sourceNode.disconnect();
-            sourceNode = null;
-        }
-        if (oscillator) {
-            try { oscillator.stop(); } catch (e) {}
-            oscillator.disconnect();
-            oscillator = null;
-        }
-        if (gainNode) {
-            gainNode.disconnect();
-            gainNode = null;
-        }
-        if (filterNode) {
-            filterNode.disconnect();
-            filterNode = null;
-        }
+        try { if (sourceNode) sourceNode.stop(); } catch(e) {}
+        try { if (oscillator) oscillator.stop(); } catch(e) {}
+        if (sourceNode) { sourceNode.disconnect(); sourceNode = null; }
+        if (oscillator) { oscillator.disconnect(); oscillator = null; }
+        if (modulatorGain) { modulatorGain.disconnect(); modulatorGain = null; }
+        if (filterNode) { filterNode.disconnect(); filterNode = null; }
+        if (outputGain) { outputGain.disconnect(); outputGain = null; }
         isActive = false;
     }
 
     function updateStatus() {
-        const el = statusEl();
+        const el = document.getElementById('crack-status');
         if (!el) return;
 
         const mode = document.body.dataset.mode || 'a3';
-        const params = window.SIGSALY_V3?.params || {};
-        const actualCarrier = params.carrier_freq || 2000;
+        const actualCarrier = (window.SIGSALY_V3?.params?.carrier_freq) || 2000;
 
-        if (mode === 'sigsaly') {
-            el.textContent = 'No carrier frequency to find — SIGSALY uses random key values, not spectrum inversion.';
-            el.style.color = '#4ecca3';
+        if (mode !== 'a3') return; // SIGSALY status is static in HTML
+
+        if (!isActive) {
+            el.textContent = 'Tap the wire, then drag to find speech...';
+            el.style.color = '';
+            return;
+        }
+
+        const diff = Math.abs(carrierFreq - actualCarrier);
+        if (diff < 100) {
+            el.textContent = '🔓 SPEECH DETECTED — cracked!';
+            el.style.color = var_danger();
+        } else if (diff < 300) {
+            el.textContent = 'Getting warmer... something emerging';
+            el.style.color = '#f39c12';
         } else {
-            const diff = Math.abs(carrierFreq - actualCarrier);
-            if (!isActive) {
-                el.textContent = 'Click the headphone jack above, then drag the slider to search for speech...';
-                el.style.color = '';
-            } else if (diff < 100) {
-                el.textContent = '🔓 SPEECH DETECTED — the A-3 scrambler is cracked!';
-                el.style.color = '#e74c3c';
-            } else if (diff < 300) {
-                el.textContent = 'Getting warmer... speech-like patterns emerging';
-                el.style.color = '#f39c12';
-            } else {
-                el.textContent = 'Searching... only noise so far';
-                el.style.color = '';
-            }
+            el.textContent = 'Searching... noise only';
+            el.style.color = '';
         }
     }
+
+    function var_danger() { return '#e74c3c'; }
 
     return { init, startCracking, stopCracking, updateStatus, get isActive() { return isActive; } };
 })();
