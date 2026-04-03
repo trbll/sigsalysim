@@ -61,7 +61,7 @@ def _save(signal, sr, session_dir, filename):
     return filename
 
 
-def _telephone(signal, sr, snr_db=28):
+def _telephone(signal, sr, snr_db=22):
     return simulate_telephone_line(signal, sr, snr_db=snr_db)
 
 
@@ -71,7 +71,7 @@ def run_v3_pipeline(input_wav_path, params=None):
     Returns a manifest dict with session info and all variant filenames.
     """
     params = params or {}
-    snr_db = params.get('snr_db', 28)
+    snr_db = params.get('snr_db', 22)
     carrier_freq = params.get('carrier_freq', 2000)
     key_seed = params.get('key_seed', 42)
     # Desync offsets: always include 0 (perfect) and a range of offsets

@@ -79,7 +79,7 @@ def _correlation(a, b):
     return round(float(np.corrcoef(a[:min_len], b[:min_len])[0, 1]), 4)
 
 
-def _telephone(signal, sr, snr_db=28):
+def _telephone(signal, sr, snr_db=22):
     """Apply telephone line simulation."""
     return simulate_telephone_line(signal, sr, snr_db=snr_db)
 
@@ -97,7 +97,7 @@ def _tip(term, explanation):
 def run_web_pipeline(input_wav_path, params=None):
     """Run the full SIGSALY pipeline and return structured results."""
     params = params or {}
-    snr_db = params.get('snr_db', 28)
+    snr_db = params.get('snr_db', 22)
     carrier_freq = params.get('carrier_freq', 2000)
     desync_offsets = params.get('desync_offsets', [1, 5, 25])
     key_seed = params.get('key_seed', 42)

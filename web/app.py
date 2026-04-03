@@ -152,7 +152,7 @@ def run_pipeline():
 
     # Extract parameters from sliders
     params = {
-        'snr_db': float(request.form.get('snr_db', 28)),
+        'snr_db': float(request.form.get('snr_db', 22)),
         'carrier_freq': int(request.form.get('carrier_freq', 2000)),
         'desync_offsets': [1, 5, int(request.form.get('desync_max', 25))],
         # Use fixed seed (42) only for the pre-computed default sample so results are

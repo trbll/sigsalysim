@@ -31,7 +31,7 @@ def main():
 
     # Run the pipeline with default params
     results = run_web_pipeline(INPUT_FILE, params={
-        'snr_db': 28,
+        'snr_db': 22,
         'carrier_freq': 2000,
         'desync_offsets': [1, 5, 25],
         'key_seed': 42,
