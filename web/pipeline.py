@@ -125,7 +125,7 @@ def run_web_pipeline(input_wav_path, params=None):
     meta_0a = _save_wav(data, sr, session_dir, '0a_original.wav')
     meta_0b = _save_wav(telephone_data, sr, session_dir, '0b_original_telephone.wav')
     audio_signals['0a_original.wav'] = (data, 'Original (clean)')
-    audio_signals['0b_original_telephone.wav'] = (telephone_data, 'Original (over the wire)')
+    audio_signals['0b_original_telephone.wav'] = (telephone_data, 'Original (over HF radio)')
 
     corr_telephone = _correlation(data, telephone_data)
     stages.append({
@@ -154,14 +154,14 @@ def run_web_pipeline(input_wav_path, params=None):
         ),
         'outputs': [
             {**meta_0a, 'label': 'Original (clean)', 'spectrogram': '0a_original.png'},
-            {**meta_0b, 'label': f'Over the wire (SNR={snr_db} dB)', 'spectrogram': '0b_original_telephone.png'},
+            {**meta_0b, 'label': f'Over HF radio (SNR={snr_db} dB)', 'spectrogram': '0b_original_telephone.png'},
         ],
         'diagnostics': {
             'correlation_telephone': corr_telephone,
             'text': (
-                f'Signal correlation (original vs telephone): {corr_telephone}\n'
+                f'Signal correlation (original vs over-the-air): {corr_telephone}\n'
                 f'SNR: {snr_db} dB (noise power is 1/{10**(snr_db/10):.0f}th of signal)\n'
-                f'Bandwidth: 300-3400 Hz (telephone standard)'
+                f'Bandwidth: 300-3400 Hz (voice channel standard)'
             ),
         }
     })
@@ -225,14 +225,14 @@ def run_web_pipeline(input_wav_path, params=None):
                 'heading': 'What the Allies sent (scrambled)',
                 'outputs': [
                     {**meta_1a, 'label': 'A-3 Scrambled', 'spectrogram': '1a_a3_scrambled.png'},
-                    {**meta_1b, 'label': 'Scrambled (over the wire)', 'spectrogram': '1b_a3_scrambled_telephone.png'},
+                    {**meta_1b, 'label': 'Scrambled (over HF radio)', 'spectrogram': '1b_a3_scrambled_telephone.png'},
                 ],
             },
             {
                 'heading': 'What the Germans recovered (cracked)',
                 'outputs': [
                     {**meta_1c, 'label': 'A-3 CRACKED', 'spectrogram': '1c_a3_cracked.png'},
-                    {**meta_1d, 'label': 'Cracked (over the wire)', 'spectrogram': '1d_a3_cracked_telephone.png'},
+                    {**meta_1d, 'label': 'Cracked (over HF radio)', 'spectrogram': '1d_a3_cracked_telephone.png'},
                 ],
             },
         ],
@@ -454,7 +454,7 @@ def run_web_pipeline(input_wav_path, params=None):
         ),
         'outputs': [
             {**meta_4a, 'label': 'Encrypted (eavesdropper hears)', 'spectrogram': '4a_sigsaly_encrypted.png'},
-            {**meta_4b, 'label': 'Encrypted (over the wire)', 'spectrogram': '4b_sigsaly_encrypted_telephone.png'},
+            {**meta_4b, 'label': 'Encrypted (over HF radio)', 'spectrogram': '4b_sigsaly_encrypted_telephone.png'},
         ],
         'diagnostics': {
             'correlation_encrypted': corr_encrypted,
@@ -519,7 +519,7 @@ def run_web_pipeline(input_wav_path, params=None):
         ),
         'outputs': [
             {**meta_5a, 'label': 'Decrypted (correct key)', 'spectrogram': '5a_sigsaly_decrypted.png'},
-            {**meta_5b, 'label': 'Decrypted (over the wire)', 'spectrogram': '5b_sigsaly_decrypted_telephone.png'},
+            {**meta_5b, 'label': 'Decrypted (over HF radio)', 'spectrogram': '5b_sigsaly_decrypted_telephone.png'},
         ],
         'diagnostics': {
             'roundtrip_bands': band_match,
