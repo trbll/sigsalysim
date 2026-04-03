@@ -35,12 +35,49 @@ body {
 }
 
 .simulator {
-    max-width: 700px;
-    margin: 0 auto;
-    padding: 1rem;
     display: flex;
     flex-direction: column;
     align-items: center;
+}
+
+/* Full-width background bands */
+.band-dc {
+    width: 100%;
+    background: linear-gradient(180deg, #1a2e1a 0%, #1e3322 30%, #1e2e20 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem 1rem 0;
+}
+
+.band-ocean {
+    width: 100%;
+    background: var(--ocean);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.band-london {
+    width: 100%;
+    background: linear-gradient(180deg, #1e2e20 0%, #1e3322 50%, #1a2e1a 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 1rem 2rem;
+}
+
+/* Content within bands stays centered */
+.band-dc > *,
+.band-london > * {
+    max-width: 700px;
+    width: 100%;
+}
+
+.band-dc > .source-label,
+.band-dc > .noise-label,
+.band-london > .source-label {
+    text-align: center;
 }
 
 /* ── Header ──────────────────────────────────────── */
@@ -391,19 +428,23 @@ body {
     width: 100%;
 }
 
+.ocean .german-post {
+    max-width: 700px;
+}
+
 .coastline {
     text-align: center;
-    padding: 0.4rem;
+    padding: 0.5rem;
     font-family: var(--mono);
     font-size: 0.55rem;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: #6a8a4a;
-    background: linear-gradient(180deg, rgba(20,40,30,0.8), var(--ocean));
+    background: linear-gradient(180deg, #1a3a2a, var(--ocean));
 }
 
 .coastline:last-child {
-    background: linear-gradient(180deg, var(--ocean), rgba(20,40,30,0.8));
+    background: linear-gradient(180deg, var(--ocean), #1a3a2a);
 }
 
 .ocean-body {
@@ -480,21 +521,23 @@ body {
 
 .german-tap {
     width: 100%;
-    height: 48px;
-    margin-bottom: 0.4rem;
+    height: 64px;
+    margin-bottom: 0.5rem;
+    border-radius: 6px;
 }
 
 .german-tap::before {
-    height: 8px;
+    height: 14px;
     background: var(--danger);
     opacity: 0.6;
+    border-radius: 4px;
 }
 
 .german-tap:hover::before {
-    height: 12px;
+    height: 18px;
     background: var(--danger);
     opacity: 1;
-    box-shadow: 0 0 12px rgba(231, 76, 60, 0.5);
+    box-shadow: 0 0 16px rgba(231, 76, 60, 0.5);
 }
 
 .german-tap.tapped::before {

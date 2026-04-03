@@ -10,168 +10,162 @@
 
 <div class="simulator">
 
-    <header class="sim-header">
-        <h1>SIGSALY <span>Interactive Simulator</span></h1>
-        <div class="mode-toggle">
-            <button class="mode-btn active" data-mode="a3">A-3 Scrambler</button>
-            <button class="mode-btn" data-mode="sigsaly">SIGSALY System</button>
-        </div>
-        <p class="mode-hint" id="mode-hint">
-            The Allies' first attempt — frequency inversion. Can the Germans crack it?
-        </p>
-    </header>
-
-    <!-- ═══ SOURCE AUDIO (above terminal) ═══ -->
-    <div class="source-label">SOURCE AUDIO</div>
-    <div class="wire-v wire-tap" data-variant="original" data-label="Raw voice input">
-        <div class="wire-flow">▼</div>
-    </div>
-
-    <!-- ═══ WASHINGTON TERMINAL ═══ -->
-    <section class="terminal" id="sender">
-        <div class="terminal-label">WASHINGTON, D.C. — PENTAGON</div>
-        <div class="terminal-inner">
-
-            <!-- A-3 mode: just SCRAMBLE -->
-            <div class="terminal-stages a3-only">
-                <div class="stage-block" id="stage-scramble">
-                    <div class="stage-name">SCRAMBLE</div>
-                    <div class="stage-unit"></div>
-                </div>
+    <!-- ═══ DC / GREEN BAND ═══ -->
+    <div class="band-dc">
+        <header class="sim-header">
+            <h1>SIGSALY <span>Interactive Simulator</span></h1>
+            <div class="mode-toggle">
+                <button class="mode-btn active" data-mode="a3">A-3 Scrambler</button>
+                <button class="mode-btn" data-mode="sigsaly">SIGSALY System</button>
             </div>
+            <p class="mode-hint" id="mode-hint">
+                The Allies' first attempt — frequency inversion. Can the Germans crack it?
+            </p>
+        </header>
 
-            <!-- SIGSALY mode: VOCODER + ENCRYPT + KEY RECORD -->
-            <div class="terminal-stages sigsaly-only">
-                <div class="stage-block" id="stage-vocoder">
-                    <div class="stage-name">VOCODER</div>
-                    <div class="stage-unit"></div>
-                </div>
-                <div class="wire-h wire-tap" data-variant="vocoded" data-label="Vocoded speech">
-                    <div class="wire-flow">▶</div>
-                </div>
-                <div class="stage-block" id="stage-encrypt">
-                    <div class="stage-name">ENCRYPT</div>
-                    <div class="stage-unit"></div>
-                </div>
-                <div class="wire-h wire-tap" data-variant="key_record" data-label="Key record (random noise)">
-                    <div class="wire-flow">◀</div>
-                </div>
-                <div class="vinyl-block" id="stage-sender-key">
-                    <div class="vinyl-record spinning" id="sender-record">
-                        <div class="vinyl-grooves"></div>
-                        <div class="vinyl-center">KEY</div>
+        <div class="source-label">SOURCE AUDIO</div>
+        <div class="wire-v wire-tap" data-variant="original" data-label="Raw voice input">
+            <div class="wire-flow">▼</div>
+        </div>
+
+        <section class="terminal" id="sender">
+            <div class="terminal-label">WASHINGTON, D.C. — PENTAGON</div>
+            <div class="terminal-inner">
+                <div class="terminal-stages a3-only">
+                    <div class="stage-block" id="stage-scramble">
+                        <div class="stage-name">SCRAMBLE</div>
+                        <div class="stage-unit"></div>
                     </div>
-                    <div class="vinyl-name">KEY RECORD</div>
                 </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Wire leaving DC — CLEAN signal, no noise yet -->
-    <div class="wire-v wire-tap"
-         data-variant-a3="a3_scrambled" data-variant-sigsaly="sigsaly_encrypted"
-         data-label-a3="Scrambled signal (clean, leaving DC)" data-label-sigsaly="Encrypted signal (clean, leaving DC)">
-        <div class="wire-flow">▼</div>
-    </div>
-
-    <!-- Noise gets added by the physical transmission line -->
-    <div class="noise-label">↓ LINE NOISE ADDED BY TRANSMISSION (SNR {{ manifest.params.snr_db if manifest else 28 }} dB) ↓</div>
-
-    <!-- Wire on the cable — now has noise from transmission -->
-    <div class="wire-v wire-tap cable-segment"
-         data-variant-a3="a3_on_wire" data-variant-sigsaly="sigsaly_on_wire"
-         data-label-a3="On the wire (scrambled + line noise)" data-label-sigsaly="On the wire (encrypted + line noise)">
-        <div class="wire-flow">▼</div>
-    </div>
-
-    <!-- ═══ OCEAN ═══ -->
-    <section class="ocean">
-        <div class="coastline">U.S. COASTLINE</div>
-        <div class="ocean-body">
-            <div class="wave wave-1"></div>
-            <div class="wave wave-2"></div>
-            <div class="cable-line"></div>
-
-            <!-- German post -->
-            <div class="german-post" id="german-post">
-                <div class="post-header">🎧 GERMAN LISTENING POST</div>
-                <div class="wire-h wire-tap german-tap"
-                     data-variant-a3="a3_on_wire" data-variant-sigsaly="sigsaly_on_wire"
-                     data-label-a3="Wiretap: scrambled signal (crackable!)" data-label-sigsaly="Wiretap: encrypted noise (uncrackable)">
-                    <div class="wire-flow">TAP</div>
-                </div>
-                <div class="cracking-ui">
-                    <label class="crack-label">
-                        Carrier frequency:
-                        <input type="range" id="crack-slider" min="500" max="5000" step="10" value="1000">
-                        <strong id="crack-freq-display">1000</strong> Hz
-                    </label>
-                    <div class="crack-status" id="crack-status">Tap the wire, then drag to find speech...</div>
-                </div>
-            </div>
-
-            <div class="ocean-text">ATLANTIC OCEAN</div>
-        </div>
-        <div class="coastline">U.K. COASTLINE</div>
-    </section>
-
-    <!-- Wire into receiver -->
-    <div class="wire-v wire-tap cable-segment"
-         data-variant-a3="a3_on_wire" data-variant-sigsaly="sigsaly_on_wire"
-         data-label-a3="Arriving signal" data-label-sigsaly="Arriving signal">
-        <div class="wire-flow">▼</div>
-    </div>
-
-    <!-- ═══ LONDON TERMINAL ═══ -->
-    <section class="terminal" id="receiver">
-        <div class="terminal-label">LONDON — GSX HEADQUARTERS</div>
-        <div class="terminal-inner">
-
-            <!-- A-3 mode: just UNSCRAMBLE -->
-            <div class="terminal-stages a3-only">
-                <div class="stage-block" id="stage-unscramble">
-                    <div class="stage-name">UNSCRAMBLE</div>
-                    <div class="stage-unit"></div>
-                </div>
-            </div>
-
-            <!-- SIGSALY mode: DECRYPT + KEY RECORD -->
-            <div class="terminal-stages sigsaly-only">
-                <div class="stage-block" id="stage-decrypt">
-                    <div class="stage-name">DECRYPT</div>
-                    <div class="stage-unit"></div>
-                </div>
-                <div class="wire-h wire-tap" data-variant="key_record" data-label="Key record (identical copy)">
-                    <div class="wire-flow">◀</div>
-                </div>
-                <div class="vinyl-block" id="stage-receiver-key">
-                    <div class="vinyl-record spinning vinyl-draggable" id="receiver-record">
-                        <div class="vinyl-grooves"></div>
-                        <div class="vinyl-center">KEY</div>
+                <div class="terminal-stages sigsaly-only">
+                    <div class="stage-block" id="stage-vocoder">
+                        <div class="stage-name">VOCODER</div>
+                        <div class="stage-unit"></div>
                     </div>
-                    <div class="vinyl-name">KEY RECORD (COPY)</div>
-                    <div class="desync-info">
-                        Offset: <strong id="desync-display">0</strong> frames
-                        <button id="desync-reset" title="Reset sync">↺</button>
+                    <div class="wire-h wire-tap" data-variant="vocoded" data-label="Vocoded speech">
+                        <div class="wire-flow">▶</div>
+                    </div>
+                    <div class="stage-block" id="stage-encrypt">
+                        <div class="stage-name">ENCRYPT</div>
+                        <div class="stage-unit"></div>
+                    </div>
+                    <div class="wire-h wire-tap" data-variant="key_record" data-label="Key record (random noise)">
+                        <div class="wire-flow">◀</div>
+                    </div>
+                    <div class="vinyl-block" id="stage-sender-key">
+                        <div class="vinyl-record spinning" id="sender-record">
+                            <div class="vinyl-grooves"></div>
+                            <div class="vinyl-center">KEY</div>
+                        </div>
+                        <div class="vinyl-name">KEY RECORD</div>
                     </div>
                 </div>
             </div>
+        </section>
+
+        <!-- Wire leaving DC — CLEAN -->
+        <div class="wire-v wire-tap"
+             data-variant-a3="a3_scrambled" data-variant-sigsaly="sigsaly_encrypted"
+             data-label-a3="Scrambled signal (clean, leaving DC)" data-label-sigsaly="Encrypted signal (clean, leaving DC)">
+            <div class="wire-flow">▼</div>
         </div>
-    </section>
 
-    <!-- Wire out of receiver -->
-    <div class="wire-v wire-tap"
-         data-variant-a3="a3_unscrambled" data-variant-sigsaly="sigsaly_decrypted_0"
-         data-label-a3="Unscrambled output" data-label-sigsaly="Decrypted output">
-        <div class="wire-flow">▼</div>
-    </div>
-    <div class="source-label">RECEIVER OUTPUT</div>
-
-    <!-- Fixed toast for currently playing audio -->
-    <div class="listening-toast" id="listening-label">
-        <span id="listening-text">Click any wire to tap in</span>
+        <div class="noise-label">↓ LINE NOISE ADDED BY TRANSMISSION ↓</div>
     </div>
 
+    <!-- ═══ OCEAN BAND (full width) ═══ -->
+    <div class="band-ocean">
+        <!-- Wire entering ocean (WITH noise) -->
+        <div class="wire-v wire-tap cable-segment"
+             data-variant-a3="a3_on_wire" data-variant-sigsaly="sigsaly_on_wire"
+             data-label-a3="On the wire (scrambled + line noise)" data-label-sigsaly="On the wire (encrypted + line noise)">
+            <div class="wire-flow">▼</div>
+        </div>
+
+        <section class="ocean">
+            <div class="coastline">U.S. COASTLINE</div>
+            <div class="ocean-body">
+                <div class="wave wave-1"></div>
+                <div class="wave wave-2"></div>
+                <div class="cable-line"></div>
+
+                <div class="german-post" id="german-post">
+                    <div class="post-header">🎧 GERMAN LISTENING POST</div>
+                    <div class="wire-h wire-tap german-tap"
+                         data-variant-a3="a3_on_wire" data-variant-sigsaly="sigsaly_on_wire"
+                         data-label-a3="Wiretap: scrambled signal (crackable!)" data-label-sigsaly="Wiretap: encrypted noise (uncrackable)">
+                        <div class="wire-flow">TAP</div>
+                    </div>
+                    <div class="cracking-ui">
+                        <label class="crack-label">
+                            Carrier frequency:
+                            <input type="range" id="crack-slider" min="500" max="5000" step="10" value="1000">
+                            <strong id="crack-freq-display">1000</strong> Hz
+                        </label>
+                        <div class="crack-status" id="crack-status">Tap the wire, then drag to find speech...</div>
+                    </div>
+                </div>
+
+                <div class="ocean-text">ATLANTIC OCEAN</div>
+            </div>
+            <div class="coastline">U.K. COASTLINE</div>
+        </section>
+
+        <!-- Wire leaving ocean -->
+        <div class="wire-v wire-tap cable-segment"
+             data-variant-a3="a3_on_wire" data-variant-sigsaly="sigsaly_on_wire"
+             data-label-a3="Arriving signal" data-label-sigsaly="Arriving signal">
+            <div class="wire-flow">▼</div>
+        </div>
+    </div>
+
+    <!-- ═══ LONDON / GREEN BAND ═══ -->
+    <div class="band-london">
+        <section class="terminal" id="receiver">
+            <div class="terminal-label">LONDON — GSX HEADQUARTERS</div>
+            <div class="terminal-inner">
+                <div class="terminal-stages a3-only">
+                    <div class="stage-block" id="stage-unscramble">
+                        <div class="stage-name">UNSCRAMBLE</div>
+                        <div class="stage-unit"></div>
+                    </div>
+                </div>
+                <div class="terminal-stages sigsaly-only">
+                    <div class="stage-block" id="stage-decrypt">
+                        <div class="stage-name">DECRYPT</div>
+                        <div class="stage-unit"></div>
+                    </div>
+                    <div class="wire-h wire-tap" data-variant="key_record" data-label="Key record (identical copy)">
+                        <div class="wire-flow">◀</div>
+                    </div>
+                    <div class="vinyl-block" id="stage-receiver-key">
+                        <div class="vinyl-record spinning vinyl-draggable" id="receiver-record">
+                            <div class="vinyl-grooves"></div>
+                            <div class="vinyl-center">KEY</div>
+                        </div>
+                        <div class="vinyl-name">KEY RECORD (COPY)</div>
+                        <div class="desync-info">
+                            Offset: <strong id="desync-display">0</strong> frames
+                            <button id="desync-reset" title="Reset sync">↺</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="wire-v wire-tap"
+             data-variant-a3="a3_unscrambled" data-variant-sigsaly="sigsaly_decrypted_0"
+             data-label-a3="Unscrambled output" data-label-sigsaly="Decrypted output">
+            <div class="wire-flow">▼</div>
+        </div>
+        <div class="source-label">RECEIVER OUTPUT</div>
+    </div>
+
+</div>
+
+<!-- Fixed toast -->
+<div class="listening-toast" id="listening-label">
+    <span id="listening-text">Click any wire to tap in</span>
 </div>
 
 <script>
