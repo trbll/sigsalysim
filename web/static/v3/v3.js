@@ -96,17 +96,29 @@
     // ── Desync changes update active audio ──────────────────
     document.addEventListener('desync-change', (e) => {
         const offset = e.detail.offset;
-        // If tapped on a decrypt output wire, switch audio
-        const tapped = document.querySelector('.wire-tap.tapped');
-        if (tapped && tapped.dataset.variant && tapped.dataset.variant.startsWith('sigsaly_decrypted')) {
-            const newVariant = `sigsaly_decrypted_${offset}`;
-            const newLabel = offset === 0
-                ? 'Decrypted (perfect sync)'
-                : `Decrypted (${offset} frame offset — DESYNC!)`;
-            tapped.dataset.variant = newVariant;
+        const newVariant = `sigsaly_decrypted_${offset}`;
+        const newLabel = offset === 0
+            ? 'Decrypted (perfect sync)'
+            : `Decrypted (${offset} frame offset — DESYNC!)`;
+
+        // If ANY audio is currently playing that's a decrypted variant, switch it
+        if (AudioEngine.isPlaying && AudioEngine.currentVariant &&
+            AudioEngine.currentVariant.startsWith('sigsaly_decrypted')) {
             AudioEngine.play(newVariant, newLabel, true);
             setLabel('🔊 ' + newLabel);
         }
+
+        // Update the receiver output wire's variant so next tap uses new offset
+        document.querySelectorAll('.wire-tap').forEach(w => {
+            if (w.dataset.variantSigsaly && w.dataset.variantSigsaly.startsWith('sigsaly_decrypted')) {
+                w.dataset.variantSigsaly = newVariant;
+                w.dataset.labelSigsaly = newLabel;
+            }
+            if (w.dataset.variant && w.dataset.variant.startsWith('sigsaly_decrypted')) {
+                w.dataset.variant = newVariant;
+                w.dataset.label = newLabel;
+            }
+        });
     });
 
     // ── Helpers ─────────────────────────────────────────────
