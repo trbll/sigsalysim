@@ -45,7 +45,7 @@ const AudioEngine = (() => {
         console.log(`AudioEngine: loaded ${Object.keys(buffers).length} variants`);
     }
 
-    function play(variantName, label) {
+    function play(variantName, label, loop) {
         if (!ctx || !buffers[variantName]) {
             console.warn(`No buffer for variant: ${variantName}`);
             return;
@@ -58,6 +58,7 @@ const AudioEngine = (() => {
 
         currentSource = ctx.createBufferSource();
         currentSource.buffer = buffers[variantName];
+        currentSource.loop = !!loop;
         currentSource.connect(ctx.destination);
         currentSource.onended = () => {
             isPlaying = false;
@@ -72,7 +73,7 @@ const AudioEngine = (() => {
         currentVariant = variantName;
         pauseOffset = 0;
 
-        _startProgress(label);
+        // Progress tracking removed in wire-tap model
     }
 
     function pause() {

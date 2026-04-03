@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════
-   SIGSALY v3 — Interactive Visualization Styles
+   SIGSALY v3 — Wire-Tap Interactive Visualization
    ══════════════════════════════════════════════════════════ */
 
 :root {
@@ -15,10 +15,9 @@
     --danger: #e74c3c;
     --warning: #f39c12;
     --ocean: #0a3d62;
-    --ocean-light: #1b6ca8;
-    --wire: #c0a040;
-    --jack-inactive: #555;
-    --jack-active: #4ecca3;
+    --wire-color: #c0a040;
+    --wire-active: #4ecca3;
+    --wire-glow: rgba(78, 204, 163, 0.4);
     --vinyl-dark: #1a1a1a;
     --vinyl-groove: #2a2a2a;
     --mono: 'SF Mono', 'Menlo', 'Consolas', monospace;
@@ -35,35 +34,32 @@ body {
 }
 
 .simulator {
-    max-width: 900px;
+    max-width: 860px;
     margin: 0 auto;
-    padding: 1rem;
+    padding: 1rem 1rem 2rem;
 }
 
 /* ── Header ─────────────────────────────────────────── */
 
 .sim-header {
     text-align: center;
-    padding: 1.5rem 0 1rem;
+    padding: 1.25rem 0 0.75rem;
 }
 
 .sim-header h1 {
-    font-size: 1.8rem;
+    font-size: 1.7rem;
     font-weight: 700;
     color: var(--accent);
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
 }
 
-.sim-header h1 span {
-    color: var(--text);
-    font-weight: 400;
-}
+.sim-header h1 span { color: var(--text); font-weight: 400; }
 
 .mode-toggle {
     display: flex;
     justify-content: center;
     gap: 0;
-    margin: 1rem auto 0.5rem;
+    margin: 0.75rem auto 0.4rem;
     background: var(--surface);
     border-radius: 6px;
     overflow: hidden;
@@ -72,34 +68,34 @@ body {
 }
 
 .mode-btn {
-    padding: 0.5rem 1.5rem;
+    padding: 0.45rem 1.3rem;
     border: none;
     background: transparent;
     color: var(--text-muted);
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
     font-family: var(--mono);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
 }
 
-.mode-btn.active {
-    background: var(--accent);
-    color: var(--bg);
-}
-
-.mode-btn:hover:not(.active) {
-    color: var(--text);
-    background: var(--surface-light);
-}
+.mode-btn.active { background: var(--accent); color: var(--bg); }
+.mode-btn:hover:not(.active) { color: var(--text); background: var(--surface-light); }
 
 .mode-hint {
     color: var(--text-muted);
-    font-size: 0.85rem;
-    margin-top: 0.5rem;
+    font-size: 0.82rem;
+    margin-top: 0.3rem;
     font-style: italic;
+}
+
+.tap-hint {
+    color: var(--accent);
+    font-size: 0.75rem;
+    margin-top: 0.2rem;
+    font-family: var(--mono);
 }
 
 /* ── Terminals ──────────────────────────────────────── */
@@ -109,14 +105,13 @@ body {
     border: 2px solid var(--terminal-border);
     border-radius: 8px;
     overflow: visible;
-    position: relative;
 }
 
 .terminal-label {
     text-align: center;
-    padding: 0.6rem;
+    padding: 0.5rem;
     font-family: var(--mono);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: var(--text-muted);
@@ -127,36 +122,11 @@ body {
 .terminal-receiver .terminal-label {
     border-bottom: none;
     border-top: 1px solid var(--terminal-border);
-    order: -1;
 }
 
 .terminal-body {
-    padding: 1.25rem;
-    display: flex;
-    gap: 1.25rem;
-    align-items: center;
-}
-
-.terminal-edge {
-    height: 4px;
-    background: var(--wire);
-    margin: 0 auto;
-    width: 3px;
+    padding: 1rem;
     position: relative;
-}
-
-.terminal-edge-bottom {
-    height: 20px;
-    width: 3px;
-    margin: 0 auto;
-    background: var(--wire);
-}
-
-.terminal-edge-top {
-    height: 20px;
-    width: 3px;
-    margin: 0 auto;
-    background: var(--wire);
 }
 
 /* ── Signal Chain ───────────────────────────────────── */
@@ -164,120 +134,169 @@ body {
 .signal-chain {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    flex: 1;
+    gap: 0;
+    justify-content: center;
 }
 
 .chain-stage {
-    background: var(--surface);
-    border: 1px solid var(--terminal-border);
-    border-radius: 6px;
-    padding: 0.6rem 0.8rem;
-    min-width: 100px;
-    text-align: center;
     position: relative;
-    transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.chain-stage.playing {
-    border-color: var(--accent);
-    box-shadow: 0 0 12px rgba(78, 204, 163, 0.3);
 }
 
 .stage-label {
     font-family: var(--mono);
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     color: var(--accent);
-    margin-bottom: 0.3rem;
+    text-align: center;
+    margin-bottom: 0.2rem;
 }
 
-.stage-waveform {
-    height: 30px;
-    background: var(--vinyl-dark);
-    border-radius: 3px;
-    margin-bottom: 0.4rem;
-    overflow: hidden;
+.stage-box {
+    width: 80px;
+    height: 44px;
+    background: var(--surface);
+    border: 1.5px solid var(--terminal-border);
+    border-radius: 4px;
+    position: relative;
 }
 
-.chain-arrow {
-    color: var(--text-muted);
-    font-size: 1.2rem;
+.chain-stage.active .stage-box {
+    border-color: var(--accent);
+    box-shadow: 0 0 10px var(--wire-glow);
+}
+
+.encrypt-box { position: relative; }
+
+.key-input-label {
+    position: absolute;
+    bottom: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--mono);
+    font-size: 0.55rem;
+    color: var(--wire-color);
+    white-space: nowrap;
+}
+
+/* ── Wires (the main interaction element) ───────────── */
+
+.wire {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.wire-line {
+    height: 3px;
+    width: 36px;
+    background: var(--wire-color);
     flex-shrink: 0;
 }
 
-/* ── Headphone Jacks ────────────────────────────────── */
+.wire-vertical .wire-line {
+    width: 3px;
+    height: 24px;
+}
 
-.headphone-jack {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: none;
-    border: none;
-    color: var(--jack-inactive);
+.wire-tap {
     cursor: pointer;
-    padding: 0.2rem;
-    transition: color 0.15s, transform 0.1s;
-    border-radius: 50%;
 }
 
-.headphone-jack:hover {
+.wire-tap:hover .wire-line {
+    background: var(--wire-active);
+    box-shadow: 0 0 8px var(--wire-glow);
+}
+
+.wire-tap.tapped .wire-line {
+    background: var(--wire-active);
+    box-shadow: 0 0 12px var(--wire-glow), 0 0 4px var(--wire-glow);
+    animation: wire-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes wire-pulse {
+    0%, 100% { box-shadow: 0 0 8px var(--wire-glow); }
+    50% { box-shadow: 0 0 16px var(--wire-glow), 0 0 6px var(--accent); }
+}
+
+.wire-tap-zone {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 0.15rem 0.3rem;
+    opacity: 0;
+    transition: opacity 0.15s;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.wire-tap:hover .wire-tap-zone {
+    opacity: 1;
+}
+
+.tap-indicator {
+    font-size: 0.6rem;
+    background: var(--surface);
     color: var(--accent);
-    transform: scale(1.15);
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+    border: 1px solid var(--accent);
+    font-family: var(--mono);
 }
 
-.headphone-jack.active {
-    color: var(--jack-active);
+/* Vertical wires between terminals and ocean */
+.wire-vertical {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-.headphone-jack.active .jack-fill {
-    fill: var(--jack-active);
+.cable-wire {
+    margin: 0 auto;
+    width: fit-content;
 }
 
-.jack-fill {
-    fill: none;
-    transition: fill 0.15s;
+.cable-wire .wire-line {
+    width: 3px;
+    height: 20px;
 }
 
 /* ── Vinyl Records ──────────────────────────────────── */
+
+.vinyl-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 0.75rem;
+    gap: 0;
+}
 
 .vinyl-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.4rem;
-    flex-shrink: 0;
-}
-
-.vinyl-label {
-    font-family: var(--mono);
-    font-size: 0.65rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-muted);
+    gap: 0.2rem;
 }
 
 .vinyl-record {
-    width: 100px;
-    height: 100px;
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
     background: var(--vinyl-dark);
     position: relative;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
 }
 
 .vinyl-grooves {
     position: absolute;
-    inset: 5px;
+    inset: 4px;
     border-radius: 50%;
     background: repeating-radial-gradient(
         circle at center,
-        var(--vinyl-dark) 0px,
-        var(--vinyl-dark) 2px,
-        var(--vinyl-groove) 2px,
-        var(--vinyl-groove) 3px
+        var(--vinyl-dark) 0px, var(--vinyl-dark) 2px,
+        var(--vinyl-groove) 2px, var(--vinyl-groove) 3px
     );
 }
 
@@ -286,14 +305,14 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 30px;
-    height: 30px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     background: var(--accent-dim);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.45rem;
+    font-size: 0.4rem;
     font-weight: 700;
     color: var(--text);
     font-family: var(--mono);
@@ -304,76 +323,70 @@ body {
     animation: spin 2s linear infinite;
 }
 
-@keyframes spin {
-    to { transform: rotate(360deg); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.vinyl-draggable { cursor: grab; user-select: none; }
+.vinyl-draggable:active { cursor: grabbing; }
+
+.vinyl-caption {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
 }
 
-.vinyl-draggable {
-    cursor: grab;
-    user-select: none;
-}
-
-.vinyl-draggable:active {
-    cursor: grabbing;
-}
-
-.vinyl-jack {
-    margin-top: 0.3rem;
+.key-wire .wire-line {
+    width: 3px;
+    height: 16px;
+    background: var(--wire-color);
 }
 
 .desync-indicator {
     font-family: var(--mono);
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     color: var(--text-muted);
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
+    margin-top: 0.2rem;
 }
 
 .desync-reset {
     background: var(--surface);
     border: 1px solid var(--terminal-border);
     color: var(--text-muted);
-    font-size: 0.65rem;
-    padding: 0.15rem 0.4rem;
+    font-size: 0.6rem;
+    padding: 0.1rem 0.35rem;
     border-radius: 3px;
     cursor: pointer;
-    font-family: var(--mono);
 }
 
-.desync-reset:hover {
-    color: var(--accent);
-    border-color: var(--accent);
-}
+.desync-reset:hover { color: var(--accent); border-color: var(--accent); }
 
 /* ── Noise Indicator ────────────────────────────────── */
 
 .noise-indicator {
     text-align: center;
-    padding: 0.4rem;
+    padding: 0.3rem;
     font-family: var(--mono);
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     color: var(--warning);
     letter-spacing: 0.03em;
 }
 
 /* ── Ocean ──────────────────────────────────────────── */
 
-.ocean {
-    position: relative;
-    margin: 0;
-}
+.ocean { position: relative; }
 
 .coastline {
     text-align: center;
-    padding: 0.5rem;
+    padding: 0.4rem;
     font-family: var(--mono);
-    font-size: 0.6rem;
+    font-size: 0.55rem;
     text-transform: uppercase;
     letter-spacing: 0.12em;
     color: #7a9a5a;
-    background: linear-gradient(180deg, #2a3a2a 0%, var(--ocean) 100%);
-    position: relative;
 }
 
 .coastline-us {
@@ -386,58 +399,53 @@ body {
 
 .ocean-body {
     background: var(--ocean);
-    padding: 2rem 1rem;
+    padding: 1.5rem 1rem;
     position: relative;
     overflow: hidden;
-    min-height: 180px;
+    min-height: 150px;
 }
 
 .ocean-label {
     text-align: center;
     font-family: var(--mono);
-    font-size: 0.7rem;
+    font-size: 0.6rem;
     letter-spacing: 0.15em;
-    color: rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.12);
     text-transform: uppercase;
     position: absolute;
-    bottom: 0.5rem;
+    bottom: 0.4rem;
     left: 50%;
     transform: translateX(-50%);
 }
 
-/* Waves */
 .wave {
     position: absolute;
     width: 200%;
-    height: 40px;
+    height: 30px;
     left: -50%;
     background: repeating-linear-gradient(
-        90deg,
-        transparent 0px,
-        rgba(255,255,255,0.03) 50px,
-        transparent 100px
+        90deg, transparent 0px, rgba(255,255,255,0.03) 50px, transparent 100px
     );
     border-radius: 40%;
     animation: wave-drift 8s ease-in-out infinite;
 }
 
-.wave-1 { top: 10%; animation-delay: 0s; opacity: 0.6; }
-.wave-2 { top: 40%; animation-delay: -2s; opacity: 0.4; }
-.wave-3 { top: 70%; animation-delay: -4s; opacity: 0.3; }
+.wave-1 { top: 10%; animation-delay: 0s; opacity: 0.5; }
+.wave-2 { top: 45%; animation-delay: -2.5s; opacity: 0.35; }
+.wave-3 { top: 75%; animation-delay: -5s; opacity: 0.25; }
 
 @keyframes wave-drift {
     0%, 100% { transform: translateX(-5%); }
     50% { transform: translateX(5%); }
 }
 
-/* Cable */
 .cable {
     position: absolute;
     left: 50%;
     top: 0;
     bottom: 0;
     width: 3px;
-    background: var(--wire);
+    background: var(--wire-color);
     transform: translateX(-50%);
     z-index: 1;
 }
@@ -450,44 +458,56 @@ body {
     background: #3a2a2a;
     border: 1px solid #6a4a4a;
     border-radius: 6px;
-    padding: 0.75rem;
-    max-width: 320px;
+    padding: 0.6rem;
+    max-width: 300px;
     margin: 0 auto;
 }
 
 .post-label {
     font-family: var(--mono);
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
     color: var(--danger);
     text-align: center;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.4rem;
 }
 
-.post-jack {
-    display: block;
-    margin: 0 auto 0.5rem;
+.post-tap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 0.4rem;
 }
 
-.cracking-workbench {
-    margin-top: 0.5rem;
+.post-tap .wire-tap {
+    padding: 0.2rem 0.5rem;
+}
+
+.post-tap .wire-line-tap {
+    width: 60px;
+    height: 3px;
+}
+
+.post-tap .tap-indicator {
+    font-size: 0.65rem;
+    color: var(--danger);
+    border-color: var(--danger);
 }
 
 .cracking-workbench label {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.3rem;
     font-family: var(--mono);
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     color: var(--text-muted);
     flex-wrap: wrap;
 }
 
 .cracking-workbench input[type="range"] {
     flex: 1;
-    min-width: 120px;
+    min-width: 100px;
     accent-color: var(--danger);
 }
 
@@ -499,109 +519,38 @@ body {
 
 .crack-status {
     font-family: var(--mono);
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     color: var(--text-muted);
     text-align: center;
-    margin-top: 0.3rem;
+    margin-top: 0.25rem;
     font-style: italic;
 }
 
-/* ── Now Playing Bar ────────────────────────────────── */
+/* ── Listening Label ────────────────────────────────── */
 
-.now-playing {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: var(--surface);
-    border-top: 2px solid var(--accent-dim);
-    padding: 0.5rem 1rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    z-index: 100;
-}
-
-.np-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.np-label {
+.listening-label {
+    text-align: center;
+    padding: 0.75rem;
     font-family: var(--mono);
-    font-size: 0.75rem;
-    color: var(--text);
-    display: block;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.np-time {
-    font-family: var(--mono);
-    font-size: 0.65rem;
+    font-size: 0.8rem;
     color: var(--text-muted);
 }
 
-.np-controls {
-    display: flex;
-    gap: 0.3rem;
-}
-
-.np-btn {
-    background: var(--surface-light);
-    border: 1px solid var(--terminal-border);
-    color: var(--text);
-    width: 32px;
-    height: 32px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.np-btn:hover:not(:disabled) {
-    border-color: var(--accent);
+.listening-label.active {
     color: var(--accent);
-}
-
-.np-btn:disabled {
-    opacity: 0.4;
-    cursor: default;
-}
-
-.np-progress {
-    flex: 2;
-    height: 4px;
-    background: var(--terminal-border);
-    border-radius: 2px;
-    overflow: hidden;
-}
-
-.np-bar {
-    height: 100%;
-    background: var(--accent);
-    width: 0%;
-    transition: width 0.1s linear;
 }
 
 /* ── Mode visibility ────────────────────────────────── */
 
 body[data-mode="a3"] .sigsaly-only { display: none !important; }
 body[data-mode="sigsaly"] .a3-only { display: none !important; }
-
-/* Default to A-3 mode */
 body:not([data-mode]) .sigsaly-only { display: none !important; }
 
 /* ── Responsive ─────────────────────────────────────── */
 
-@media (max-width: 700px) {
-    .terminal-body { flex-direction: column; }
+@media (max-width: 600px) {
     .signal-chain { flex-wrap: wrap; justify-content: center; }
-    .simulator { padding: 0.5rem; }
+    .simulator { padding: 0.5rem 0.5rem 2rem; }
+    .stage-box { width: 65px; height: 36px; }
+    .wire-line { width: 24px; }
 }
-
-/* Bottom padding for now-playing bar */
-.simulator { padding-bottom: 4rem; }
