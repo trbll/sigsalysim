@@ -473,15 +473,31 @@ def run_web_pipeline(input_wav_path, params=None):
     })
 
     # ── STAGE 5: Decryption ─────────────────────────────────────
+    # Clean decryption: decrypt the exact encrypted parameters (no noise)
+    # This is what happens when FSK demodulation perfectly recovers the levels
     dec_bands, dec_pitch = decrypt_vocoder_params(enc_bands, enc_pitch, key)
     dec_frames = array_to_frames(dec_bands, dec_pitch, voiced[:len(dec_bands)], max_vals[:len(dec_bands)])
     decrypted = synthesize(dec_frames, sr)
-    decrypted_tel = _telephone(decrypted, sr, snr_db)
+
+    # Noisy decryption: take the encrypted audio WITH radio noise,
+    # re-analyze it through the vocoder (simulating what London's terminal
+    # actually received), then decrypt those noisy parameters.
+    # This shows the effect of radio degradation on the decryption process.
+    noisy_enc_frames = analyze(encrypted_tel, sr)
+    noisy_enc_bands, noisy_enc_pitch, noisy_voiced, noisy_max_vals = frames_to_array(noisy_enc_frames)
+    noisy_dec_bands, noisy_dec_pitch = decrypt_vocoder_params(
+        noisy_enc_bands, noisy_enc_pitch, key
+    )
+    noisy_dec_frames = array_to_frames(
+        noisy_dec_bands, noisy_dec_pitch,
+        noisy_voiced[:len(noisy_dec_bands)], noisy_max_vals[:len(noisy_dec_bands)]
+    )
+    decrypted_noisy = synthesize(noisy_dec_frames, sr)
 
     meta_5a = _save_wav(decrypted, sr, session_dir, '5a_sigsaly_decrypted.wav')
-    meta_5b = _save_wav(decrypted_tel, sr, session_dir, '5b_sigsaly_decrypted_telephone.wav')
+    meta_5b = _save_wav(decrypted_noisy, sr, session_dir, '5b_sigsaly_decrypted_telephone.wav')
     audio_signals['5a_sigsaly_decrypted.wav'] = (decrypted, 'SIGSALY Decrypted')
-    audio_signals['5b_sigsaly_decrypted_telephone.wav'] = (decrypted_tel, 'Decrypted (wire)')
+    audio_signals['5b_sigsaly_decrypted_telephone.wav'] = (decrypted_noisy, 'Decrypted (from noisy signal)')
 
     band_match = bool(np.array_equal(dec_bands, bands[:len(dec_bands)]))
     pitch_match = bool(np.array_equal(dec_pitch, pitch[:len(dec_pitch)]))
@@ -519,7 +535,7 @@ def run_web_pipeline(input_wav_path, params=None):
         ),
         'outputs': [
             {**meta_5a, 'label': 'Decrypted (correct key)', 'spectrogram': '5a_sigsaly_decrypted.png'},
-            {**meta_5b, 'label': 'Decrypted (over HF radio)', 'spectrogram': '5b_sigsaly_decrypted_telephone.png'},
+            {**meta_5b, 'label': 'Decrypted (from noisy signal)', 'spectrogram': '5b_sigsaly_decrypted_telephone.png'},
         ],
         'diagnostics': {
             'roundtrip_bands': band_match,
