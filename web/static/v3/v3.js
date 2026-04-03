@@ -94,6 +94,8 @@
     });
 
     // ── Desync changes update active audio ──────────────────
+    // This is the ONLY place that handles desync audio switching.
+    // v3-vinyl.js dispatches 'desync-change' and we handle it here.
     document.addEventListener('desync-change', (e) => {
         const offset = e.detail.offset;
         const newVariant = `sigsaly_decrypted_${offset}`;
@@ -101,14 +103,7 @@
             ? 'Decrypted (perfect sync)'
             : `Decrypted (${offset} frame offset — DESYNC!)`;
 
-        // If ANY audio is currently playing that's a decrypted variant, switch it
-        if (AudioEngine.isPlaying && AudioEngine.currentVariant &&
-            AudioEngine.currentVariant.startsWith('sigsaly_decrypted')) {
-            AudioEngine.play(newVariant, newLabel, true);
-            setLabel('🔊 ' + newLabel);
-        }
-
-        // Update the receiver output wire's variant so next tap uses new offset
+        // Update all receiver output wires to point to the new offset variant
         document.querySelectorAll('.wire-tap').forEach(w => {
             if (w.dataset.variantSigsaly && w.dataset.variantSigsaly.startsWith('sigsaly_decrypted')) {
                 w.dataset.variantSigsaly = newVariant;
@@ -119,6 +114,15 @@
                 w.dataset.label = newLabel;
             }
         });
+
+        // If currently playing ANY decrypted variant, switch immediately
+        const current = AudioEngine.currentVariant;
+        if (current && current.startsWith('sigsaly_decrypted')) {
+            // Stop current and start new — clean switch
+            AudioEngine.stop();
+            AudioEngine.play(newVariant, newLabel, true);
+            setLabel('🔊 ' + newLabel);
+        }
     });
 
     // ── Helpers ─────────────────────────────────────────────

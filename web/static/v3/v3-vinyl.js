@@ -102,23 +102,13 @@ const VinylInteraction = (() => {
         currentOffset = offset;
         updateDisplay();
 
-        // Record always spins — at offset it spins from a rotated start position
-        // using CSS animation-delay to visually offset it from the sender record
+        // Record always spins — animation-delay offsets the phase
         if (recordEl) {
             recordEl.classList.add('spinning');
-            // Use negative animation-delay to offset the phase of the spin
-            // This makes the record visually "ahead" or "behind" the sender
             recordEl.style.animationDelay = `${-offset * 0.04}s`;
         }
 
-        // If currently playing decrypt audio, switch to new offset
-        if (AudioEngine.isPlaying && AudioEngine.currentVariant &&
-            AudioEngine.currentVariant.startsWith('sigsaly_decrypted_')) {
-            AudioEngine.play(`sigsaly_decrypted_${offset}`,
-                offset === 0 ? 'Decrypted (perfect sync)' : `Decrypted (${offset} frame offset — DESYNC)`);
-        }
-
-        // Dispatch custom event for other components
+        // Dispatch event — v3.js handles audio switching
         document.dispatchEvent(new CustomEvent('desync-change', { detail: { offset } }));
     }
 
