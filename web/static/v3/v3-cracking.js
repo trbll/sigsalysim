@@ -137,7 +137,7 @@ const CrackingWorkbench = (() => {
 
         const diff = Math.abs(carrierFreq - actualCarrier);
         if (diff < 100) {
-            el.textContent = '🔓 SPEECH DETECTED — cracked!';
+            el.textContent = 'Speech detected - cracked.';
             el.style.color = var_danger();
         } else if (diff < 300) {
             el.textContent = 'Getting warmer... something emerging';

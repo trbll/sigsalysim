@@ -23,8 +23,8 @@
     const modeHint = document.getElementById('mode-hint');
 
     const HINTS = {
-        a3: "The Allies' first attempt — simplified frequency inversion. Can the Germans crack it?",
-        sigsaly: "The full SIGSALY system — vocoder + one-time pad. Provably unbreakable."
+        a3: "The Allies' first attempt - simplified frequency inversion. Can the Germans crack it?",
+        sigsaly: "The full SIGSALY system - vocoder plus one-time pad. The listening post cannot peel it open."
     };
 
     modeButtons.forEach(btn => {
@@ -55,12 +55,12 @@
                 label = mode() === 'a3' ? (wire.dataset.labelA3 || '') : (wire.dataset.labelSigsaly || '');
             }
 
-            // German post tap → activate cracking workbench
+            // German post tap activates the cracking workbench
             if (wire.classList.contains('german-tap')) {
                 clearTapped();
                 wire.classList.add('tapped');
                 CrackingWorkbench.startCracking(mode());
-                setLabel('🎧 Cracking active — drag slider to search');
+                setLabel('Cracking active - drag the slider to search');
                 highlightStages(mode() === 'a3' ? 'a3_scrambled' : 'sigsaly_encrypted');
                 return;
             }
@@ -84,13 +84,13 @@
                 variant = `sigsaly_decrypted_${offset}`;
                 label = offset === 0
                     ? 'Decrypted (perfect sync)'
-                    : `Decrypted (${offset} frame offset — DESYNC!)`;
+                    : `Decrypted (${offset} frame offset - desync)`;
             }
 
             clearTapped();
             wire.classList.add('tapped');
             AudioEngine.play(variant, label, true);
-            setLabel('🔊 ' + label);
+            setLabel('Listening: ' + label);
             highlightStages(variant);
         });
     });
@@ -103,7 +103,7 @@
         const newVariant = `sigsaly_decrypted_${offset}`;
         const newLabel = offset === 0
             ? 'Decrypted (perfect sync)'
-            : `Decrypted (${offset} frame offset — DESYNC!)`;
+            : `Decrypted (${offset} frame offset - desync)`;
 
         // Update receiver output wire datasets
         document.querySelectorAll('.wire-tap').forEach(w => {
@@ -120,7 +120,7 @@
         // Always start playback — vinyl already stopped audio on mousedown
         AudioEngine.stop();
         AudioEngine.play(newVariant, newLabel, true);
-        setLabel('🔊 ' + newLabel);
+        setLabel('Listening: ' + newLabel);
         highlightStages(newVariant);
 
         // Mark the receiver output wire as tapped
@@ -180,7 +180,12 @@
 
     function setLabel(text) {
         if (listeningText) listeningText.textContent = text;
-        if (listeningLabel) listeningLabel.classList.toggle('active', text.startsWith('🔊') || text.startsWith('🎧'));
+        if (listeningLabel) {
+            listeningLabel.classList.toggle(
+                'active',
+                text.startsWith('Listening:') || text.startsWith('Cracking active')
+            );
+        }
     }
 
 })();
