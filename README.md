@@ -47,9 +47,9 @@ sigsalysim/
 │   ├── encryption.py           # One-time pad (mod-6 arithmetic)
 │   └── key_generation.py       # Vinyl record key generator
 ├── web/                        # Flask web app (dashboard + v3 interactive)
-│   ├── app.py                  # Flask routes for / and /v3
+│   ├── app.py                  # Flask routes for /, /v3, and /toy
 │   ├── pipeline.py             # Structured pipeline orchestration for the dashboard
-│   ├── pipeline_v3.py          # Flat audio manifest generation for /v3
+│   ├── pipeline_v3.py          # Flat audio manifest generation for /v3 and /toy
 │   ├── spectrograms.py         # Matplotlib spectrogram generation
 │   ├── templates/index.html    # Root dashboard UI
 │   ├── templates/v3.html       # Interactive route UI
@@ -68,7 +68,7 @@ sigsalysim/
 |---------|--------|-------------|
 | **v1 — CLI Pipeline** | ✅ Complete | Python modules + CLI script generating 17 audio files plus key-record metadata across 6 stages with quantitative diagnostics |
 | **v2 — Web Dashboard** | ✅ Complete | Flask app wrapping v1: use the built-in sample, upload audio, or record in-browser; tweak parameters (SNR, carrier freq, desync), view spectrograms and hear all outputs in the browser |
-| **v3 — Interactive Visualization** | ✅ Complete | Interactive wire-tap route with visual signal flow, vinyl desync demo, and real-time A-3 cracking workbench |
+| **v3 — Interactive Visualization** | ✅ Complete | Interactive wire-tap route, also exposed at `/toy`, with visual signal flow, vinyl desync demo, and real-time A-3 cracking workbench |
 
 ## Quick Start
 
@@ -101,7 +101,7 @@ pip install gunicorn                  # one-time setup
 
 Students connect to `http://your-hostname.local:3001` (or your IP address). Each worker handles one pipeline run at a time — with 8 workers, 8 students can process simultaneously; additional requests queue automatically. See `serve.sh` for recommended worker counts by class size.
 
-Open `http://127.0.0.1:3001/` for the full dashboard or `http://127.0.0.1:3001/v3` for the interactive visualization. The dashboard lets you use the built-in sample, upload audio, or record from your microphone in-browser; adjust parameters with sliders, and click **Run Pipeline**. All 17 audio outputs appear with spectrograms, audio players, and diagnostic text. Custom audio is limited to 120 seconds and must be at least 40 ms long.
+Open `http://127.0.0.1:3001/` for the full dashboard, `http://127.0.0.1:3001/v3` for the interactive visualization, or `http://127.0.0.1:3001/toy` for the same interactive page under a more playful URL. The dashboard lets you use the built-in sample, upload audio, or record from your microphone in-browser; adjust parameters with sliders, and click **Run Pipeline**. All 17 audio outputs appear with spectrograms, audio players, and diagnostic text. Custom audio is limited to 120 seconds and must be at least 40 ms long.
 
 **Features:**
 - Source audio preview player (always visible for A/B comparison)

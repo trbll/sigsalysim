@@ -3,7 +3,7 @@ SIGSALY Simulator — Flask Web App
 =================================
 Interactive web routes for the SIGSALY educational pipeline.
 Use the root dashboard for the full stage-by-stage walkthrough
-or `/v3` for the visual wire-tap experience.
+or `/v3` and `/toy` for the visual wire-tap experience.
 
 Usage (single user / local development):
     python web/app.py                    # default port 3001
@@ -311,8 +311,9 @@ def _load_v3_defaults():
 
 
 @app.route('/v3')
+@app.route('/toy')
 def v3_interactive():
-    """Render the v3 interactive visualization."""
+    """Render the interactive wire-tap visualization."""
     theme = request.args.get('theme', 'default')
     if theme not in VALID_THEMES:
         theme = 'default'
@@ -351,8 +352,9 @@ if __name__ == '__main__':
     print(f"SIGSALY Simulator — Web App (single-user mode)")
     print(f"  Base URL: http://{args.host}:{args.port}")
     print(f"  Routes:")
-    print(f"    /   Full dashboard")
-    print(f"    /v3 Interactive visualization")
+    print(f"    /     Full dashboard")
+    print(f"    /v3   Interactive visualization")
+    print(f"    /toy  Same interactive page under a playful alias")
     print(f"  Max audio duration: {MAX_AUDIO_DURATION}s")
     print(f"  Min audio duration: {MIN_AUDIO_DURATION_MS}ms")
     print(f"  Default sample: {DEFAULT_SAMPLE}")
