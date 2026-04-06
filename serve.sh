@@ -73,6 +73,7 @@ echo ""
 exec gunicorn \
     --workers "$WORKERS" \
     --timeout 120 \
+    --no-sendfile \
     --bind "${HOST}:${PORT}" \
     --access-logfile - \
     --error-logfile - \
