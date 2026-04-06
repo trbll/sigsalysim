@@ -1,0 +1,6 @@
+numpy
+scipy
+soundfile
+matplotlib
+flask
+gunicorn

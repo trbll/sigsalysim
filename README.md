@@ -58,6 +58,7 @@ sigsalysim/
 ├── scripts/
 │   └── run_pipeline.py         # v1 CLI pipeline (all stages)
 ├── serve.sh                    # Multi-user server launcher (gunicorn)
+├── requirements.txt            # Python dependencies for local setup
 ├── venv/                       # Python virtual environment
 └── README.md
 ```
@@ -74,12 +75,32 @@ sigsalysim/
 
 ### Setup
 
+Open a terminal, clone the repository somewhere convenient, then enter the project directory:
+
 ```bash
-cd ~/Developer/sigsalysim
+git clone https://github.com/trbll/sigsalysim.git
+cd sigsalysim
+```
+
+Then choose either `pip` or `uv` for the environment setup.
+
+**Option A: `pip`**
+
+```bash
 python3 -m venv venv
 source venv/bin/activate
-pip install numpy scipy soundfile matplotlib flask
+pip install -r requirements.txt
 ```
+
+**Option B: `uv`**
+
+```bash
+uv venv venv
+source venv/bin/activate
+uv pip install -r requirements.txt
+```
+
+If you already have the repo locally, skip the `git clone` step and just `cd` into your existing `sigsalysim` checkout. If you use `uv`, install it first from [https://docs.astral.sh/uv/](https://docs.astral.sh/uv/) if it is not already on your machine.
 
 ### Web App (recommended)
 
@@ -94,7 +115,6 @@ python web/app.py --port 8080         # custom port
 **Multi-user (classroom — students connect to your machine):**
 
 ```bash
-pip install gunicorn                  # one-time setup
 ./serve.sh                            # 8 workers on port 3001
 ./serve.sh --workers 12 --port 8080   # custom
 ```
