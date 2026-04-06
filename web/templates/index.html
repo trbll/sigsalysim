@@ -355,7 +355,7 @@
         <div class="footer-credit-line">Created for Internet of Things (ECE:5550) at the University of Iowa.</div>
         <div class="footer-credit-line">Built and iterated with Claude Opus 4.6 in Claude Code and GPT-5.4 in Codex.</div>
         <div class="footer-credit-line">If you find errors or issues, please let Prof. Bell know.</div>
-        <div class="footer-credit-line">v2 - April 2, 2026</div>
+        <div class="footer-credit-line">Class demo refresh - April 6, 2026</div>
     </div>
 </footer>
 
@@ -418,15 +418,17 @@ document.querySelectorAll('.tooltip').forEach(function(tip) {
         var ttHeight = tt.offsetHeight || 120;
         if (top - ttHeight < 8) {
             // Not enough room above, place below
+            tt.classList.add('tooltip-below');
             tt.style.top = (rect.bottom + 8) + 'px';
-            tt.querySelector('::after') // can't style pseudo via JS, but it's fine
         } else {
+            tt.classList.remove('tooltip-below');
             tt.style.top = (top - ttHeight) + 'px';
         }
     });
 });
 
 var MAX_RECORD_SECONDS = {{ max_duration | tojson }};
+var MIN_RECORD_SECONDS = {{ min_duration | tojson }};
 var sourcePreview = document.querySelector('.source-preview');
 var sourcePlayer = document.getElementById('source-player');
 var sourceLabel = document.querySelector('.source-preview-label strong');
@@ -729,6 +731,9 @@ async function handleRecordingStop() {
         setRecordStatus('Processing microphone audio...', '');
         clearRecordedSelection();
         var converted = await convertRecordingToWav(recordedBlob);
+        if (converted.durationSeconds < MIN_RECORD_SECONDS) {
+            throw new Error('Recording is too short. Capture at least 40 ms of audio.');
+        }
         converted.objectUrl = URL.createObjectURL(converted.file);
         state.recordedFile = converted.file;
         state.recordedInfo = converted;

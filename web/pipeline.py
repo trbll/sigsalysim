@@ -278,6 +278,7 @@ def run_web_pipeline(input_wav_path, params=None):
 
     level_counts = {lv: int(np.sum(bands == lv)) for lv in range(NUM_LEVELS)}
     total_values = bands.size
+    compression_ratio = source_info["sr"] / (12 * FRAME_RATE)
 
     stages.append({
         'id': 2,
@@ -321,14 +322,14 @@ def run_web_pipeline(input_wav_path, params=None):
             'n_frames': len(frames),
             'n_voiced': n_voiced,
             'n_unvoiced': len(frames) - n_voiced,
-            'compression_ratio': f'{source_info["samples"] / (len(frames) * 12):.0f}:1',
+            'compression_ratio': f'{compression_ratio:.0f}:1',
             'correlation_vocoded': corr_vocoded,
             'level_distribution': level_counts,
             'text': (
                 f'Frames: {len(frames)} at {FRAME_RATE} fps ({len(frames)/FRAME_RATE:.2f}s)\n'
                 f'Voiced: {n_voiced}/{len(frames)} ({100*n_voiced/len(frames):.0f}%), '
                 f'Unvoiced: {len(frames)-n_voiced}/{len(frames)} ({100*(len(frames)-n_voiced)/len(frames):.0f}%)\n'
-                f'Compression: {source_info["samples"]//len(frames)//12 * 12}:1 '
+                f'Compression: {compression_ratio:.0f}:1 '
                 f'({source_info["sr"]} samples/sec -> {12*FRAME_RATE} values/sec)\n'
                 f'Quantization: {NUM_LEVELS} levels per band ({NUM_BANDS} bands)\n'
                 f'Level distribution: {", ".join(f"L{k}={v}" for k,v in level_counts.items())}\n'

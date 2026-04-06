@@ -1,9 +1,9 @@
 """
-SIGSALY Simulator — Flask Web Dashboard (v2)
-=============================================
-A simple web interface for the SIGSALY educational pipeline.
-Upload audio (or use the built-in sample), tweak parameters,
-and hear/see all outputs with audio players and spectrograms.
+SIGSALY Simulator — Flask Web App
+=================================
+Interactive web routes for the SIGSALY educational pipeline.
+Use the root dashboard for the full stage-by-stage walkthrough
+or `/v3` for the visual wire-tap experience.
 
 Usage (single user / local development):
     python web/app.py                    # default port 3001
@@ -30,6 +30,7 @@ sys.path.insert(0, PROJECT_ROOT)
 from flask import Flask, render_template, request, send_from_directory
 import soundfile as sf
 
+from sigsaly.vocoder import FRAME_RATE
 from web.pipeline import run_web_pipeline, cleanup_old_sessions
 from web.pipeline_v3 import run_v3_pipeline, cleanup_v3_sessions
 
@@ -43,6 +44,8 @@ VALID_SOURCE_MODES = {'builtin', 'upload', 'record'}
 # to process (vocoder analysis, cracking search, spectrogram generation).
 # 120s is generous for educational demos — most speech clips are 5-30s.
 MAX_AUDIO_DURATION = 120
+MIN_AUDIO_DURATION = 2 / FRAME_RATE
+MIN_AUDIO_DURATION_MS = round(MIN_AUDIO_DURATION * 1000)
 
 # Default sample audio path
 DEFAULT_SAMPLE = os.path.join(PROJECT_ROOT, 'input', 'sample_speech_eleven.mp3')
@@ -88,6 +91,7 @@ def _render_index(*, theme, results=None, error=None, active_source_mode='builti
         error=error,
         default_source=_get_default_source_info(),
         max_duration=MAX_AUDIO_DURATION,
+        min_duration=MIN_AUDIO_DURATION,
         is_default=is_default,
         theme=theme,
         active_source_mode=_normalize_source_mode(active_source_mode),
@@ -171,6 +175,17 @@ def run_pipeline():
             )
 
         # Enforce duration limit
+        if info.duration < MIN_AUDIO_DURATION:
+            if temp_input_path and os.path.exists(temp_input_path):
+                os.unlink(temp_input_path)
+            return _render_index(
+                theme=theme,
+                error=(f'Audio too short: {info.duration:.3f}s '
+                       f'(minimum {MIN_AUDIO_DURATION_MS} ms). '
+                       f'Please provide at least one full vocoder analysis window.'),
+                active_source_mode=source_mode,
+            )
+
         if info.duration > MAX_AUDIO_DURATION:
             if temp_input_path and os.path.exists(temp_input_path):
                 os.unlink(temp_input_path)
@@ -321,7 +336,7 @@ def serve_v3_audio(session_id, filename):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='SIGSALY Simulator Web Dashboard')
+    parser = argparse.ArgumentParser(description='SIGSALY Simulator Web App')
     parser.add_argument('--port', type=int, default=3001,
                         help='Port to run on (default: 3001)')
     parser.add_argument('--host', default='127.0.0.1',
@@ -331,12 +346,18 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     has_default = os.path.exists(DEFAULT_RESULTS_JSON)
+    has_v3_default = os.path.exists(V3_DEFAULT_MANIFEST)
 
-    print(f"SIGSALY Simulator — Web Dashboard (single-user mode)")
-    print(f"  http://{args.host}:{args.port}")
+    print(f"SIGSALY Simulator — Web App (single-user mode)")
+    print(f"  Base URL: http://{args.host}:{args.port}")
+    print(f"  Routes:")
+    print(f"    /   Full dashboard")
+    print(f"    /v3 Interactive visualization")
     print(f"  Max audio duration: {MAX_AUDIO_DURATION}s")
+    print(f"  Min audio duration: {MIN_AUDIO_DURATION_MS}ms")
     print(f"  Default sample: {DEFAULT_SAMPLE}")
-    print(f"  Pre-computed defaults: {'YES — instant load' if has_default else 'NO — run scripts/precompute_default.py'}")
+    print(f"  Pre-computed defaults (/): {'YES — instant load' if has_default else 'NO — run scripts/precompute_default.py'}")
+    print(f"  Pre-computed defaults (/v3): {'YES — instant load' if has_v3_default else 'NO — run scripts/precompute_v3.py'}")
     print()
     print(f"  For multi-user (classroom), use: ./serve.sh")
     print()

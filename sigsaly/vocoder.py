@@ -13,7 +13,8 @@ The vocoder decomposes speech into a compact parametric representation:
 
 This is sampled 50 times per second (every 20ms), producing just 12 numbers
 per frame. Compare this to the raw audio: at 22050 Hz, that's 441 samples
-per 20ms frame — a 37:1 compression ratio.
+per 20ms frame — about 37:1 compression. At 44100 Hz, the same vocoder
+representation is about 74:1.
 
 Historical context:
   The vocoder was invented by Homer Dudley at Bell Labs in 1939.
@@ -161,6 +162,9 @@ def _detect_pitch(signal, sr, frame_size, hop_size):
         pitches: Array of pitch frequencies per frame (Hz, 0 = unvoiced)
         voiced:  Boolean array indicating voiced/unvoiced per frame
     """
+    if len(signal) < frame_size:
+        return np.zeros(0), np.zeros(0, dtype=bool)
+
     n_frames = (len(signal) - frame_size) // hop_size + 1
     pitches = np.zeros(n_frames)
     voiced = np.zeros(n_frames, dtype=bool)
@@ -310,8 +314,8 @@ class VocoderFrame:
     Each frame has 10 band levels + 1 pitch level + 1 voiced flag = 12 fields.
     Of these, band_levels (10) and pitch_level (1) are the encrypted streams;
     the voiced/unvoiced flag is carried separately in this implementation.
-    At 50 frames/sec, the vocoder produces 600 field values/sec vs raw audio
-    at 22050 samples/sec — roughly a 37:1 compression.
+    At 50 frames/sec, the vocoder produces 600 field values/sec. That works
+    out to roughly 37:1 compression at 22050 Hz or 74:1 at 44100 Hz.
     """
     def __init__(self):
         self.band_levels = np.zeros(NUM_BANDS, dtype=int)  # 10 x [0-5]
@@ -348,6 +352,17 @@ def analyze(signal, sr, verbose=False):
     """
     hop_size = sr // FRAME_RATE     # Samples per frame (e.g., 441 at 22050 Hz)
     frame_size = hop_size * 2       # Double-length window for pitch detection
+
+    if hop_size < 1:
+        raise ValueError(f'sample rate too low for {FRAME_RATE} fps vocoder analysis: {sr} Hz')
+    if len(signal) < frame_size:
+        min_duration_ms = 1000 * frame_size / sr
+        actual_duration_ms = 1000 * len(signal) / sr
+        raise ValueError(
+            f'audio too short for vocoder analysis: need at least {min_duration_ms:.0f} ms, '
+            f'got {actual_duration_ms:.0f} ms'
+        )
+
     n_frames = len(signal) // hop_size
 
     # ── Step 1: Extract band envelopes ──
@@ -414,9 +429,10 @@ def _print_analysis_diagnostics(frames, signal, sr, hop_size):
     voiced_pitches = [f.pitch_hz for f in frames if f.voiced and f.pitch_hz > 0]
     pitch_levels = [f.pitch_level for f in frames if f.voiced]
 
-    # Compression ratio
-    raw_samples = len(signal)
-    param_count = n_frames * (NUM_BANDS + 1 + 1)  # bands + pitch + voiced flag
+    # Compression ratio at this sample rate
+    raw_values_per_second = sr
+    vocoder_values_per_second = (NUM_BANDS + 1 + 1) * FRAME_RATE
+    compression_ratio = raw_values_per_second / vocoder_values_per_second
 
     print()
     print("  ┌─ Vocoder Analysis Diagnostics ────────────────────────")
@@ -424,9 +440,9 @@ def _print_analysis_diagnostics(frames, signal, sr, hop_size):
     print(f"  │ Output: {n_frames} frames at {FRAME_RATE} fps (every {1000/FRAME_RATE:.0f}ms)")
     print(f"  │")
     print(f"  │ Compression:")
-    print(f"  │   Raw audio:  {raw_samples} samples/frame × {sr//hop_size} fps = {sr} values/sec")
-    print(f"  │   Vocoder:    {NUM_BANDS} bands + 1 pitch + 1 voiced = 12 values/frame × {FRAME_RATE} fps = {12*FRAME_RATE} values/sec")
-    print(f"  │   Ratio:      {raw_samples / param_count:.0f}:1 (before quantization)")
+    print(f"  │   Raw audio:  {raw_values_per_second} samples/sec")
+    print(f"  │   Vocoder:    {NUM_BANDS} bands + 1 pitch + 1 voiced = 12 values/frame × {FRAME_RATE} fps = {vocoder_values_per_second} values/sec")
+    print(f"  │   Ratio:      {compression_ratio:.0f}:1")
     print(f"  │")
     print(f"  │ Voicing: {n_voiced}/{n_frames} voiced ({100*n_voiced/n_frames:.0f}%), "
           f"{n_unvoiced}/{n_frames} unvoiced ({100*n_unvoiced/n_frames:.0f}%)")

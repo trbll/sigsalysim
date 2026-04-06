@@ -28,6 +28,8 @@ Output files (all in output_dir/):
     3b_sigsaly_encrypted_telephone.wav  — Encrypted + phone line noise
     3c_sigsaly_decrypted.wav            — Decrypted with correct key
     3d_sigsaly_decrypted_telephone.wav  — Decrypted, over phone line
+    3e_key_record_audio.wav             — What the vinyl key sounded like
+    key_record_sender.npz               — Sender key record data
 
   Stage 4: Cracking Attempts
     4a_sigsaly_a3crack_attempt.wav      — A-3 method on SIGSALY (fails!)

@@ -1,1 +1,1 @@
-# SIGSALY Simulator — Web Dashboard (v2)
+# SIGSALY Simulator — Web App

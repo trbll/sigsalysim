@@ -46,12 +46,15 @@ sigsalysim/
 │   ├── vocoder.py              # 10-band channel vocoder
 │   ├── encryption.py           # One-time pad (mod-6 arithmetic)
 │   └── key_generation.py       # Vinyl record key generator
-├── web/                        # v2 Flask web dashboard
-│   ├── app.py                  # Flask routes
-│   ├── pipeline.py             # Structured pipeline orchestration
+├── web/                        # Flask web app (dashboard + v3 interactive)
+│   ├── app.py                  # Flask routes for / and /v3
+│   ├── pipeline.py             # Structured pipeline orchestration for the dashboard
+│   ├── pipeline_v3.py          # Flat audio manifest generation for /v3
 │   ├── spectrograms.py         # Matplotlib spectrogram generation
-│   ├── templates/index.html    # Single-page UI
-│   └── static/style.css        # Styling
+│   ├── templates/index.html    # Root dashboard UI
+│   ├── templates/v3.html       # Interactive route UI
+│   ├── static/style.css        # Dashboard styling
+│   └── static/v3/              # Interactive JS/CSS
 ├── scripts/
 │   └── run_pipeline.py         # v1 CLI pipeline (all stages)
 ├── serve.sh                    # Multi-user server launcher (gunicorn)
@@ -63,9 +66,9 @@ sigsalysim/
 
 | Version | Status | Description |
 |---------|--------|-------------|
-| **v1 — CLI Pipeline** | ✅ Complete | Python modules + CLI script generating 18 audio files across 6 stages with quantitative diagnostics |
+| **v1 — CLI Pipeline** | ✅ Complete | Python modules + CLI script generating 17 audio files plus key-record metadata across 6 stages with quantitative diagnostics |
 | **v2 — Web Dashboard** | ✅ Complete | Flask app wrapping v1: use the built-in sample, upload audio, or record in-browser; tweak parameters (SNR, carrier freq, desync), view spectrograms and hear all outputs in the browser |
-| **v3 — Interactive Visualization** | 🔜 Planned | Spinning vinyl record synchronization, real-time cracking workbench, FSK transmission simulation, dual turntable crossover, potentially networked two-party experience |
+| **v3 — Interactive Visualization** | ✅ Complete | Interactive wire-tap route with visual signal flow, vinyl desync demo, and real-time A-3 cracking workbench |
 
 ## Quick Start
 
@@ -78,7 +81,7 @@ source venv/bin/activate
 pip install numpy scipy soundfile matplotlib flask
 ```
 
-### v2: Web Dashboard (recommended)
+### Web App (recommended)
 
 **Single user (local development / personal exploration):**
 
@@ -98,7 +101,7 @@ pip install gunicorn                  # one-time setup
 
 Students connect to `http://your-hostname.local:3001` (or your IP address). Each worker handles one pipeline run at a time — with 8 workers, 8 students can process simultaneously; additional requests queue automatically. See `serve.sh` for recommended worker counts by class size.
 
-Open the URL in your browser. Use the built-in sample, upload an audio file, or record from your microphone in-browser; adjust parameters with sliders, and click **Run Pipeline**. All 17 audio outputs appear with spectrograms, audio players, and diagnostic text. Custom audio is limited to 120 seconds.
+Open `http://127.0.0.1:3001/` for the full dashboard or `http://127.0.0.1:3001/v3` for the interactive visualization. The dashboard lets you use the built-in sample, upload audio, or record from your microphone in-browser; adjust parameters with sliders, and click **Run Pipeline**. All 17 audio outputs appear with spectrograms, audio players, and diagnostic text. Custom audio is limited to 120 seconds and must be at least 40 ms long.
 
 **Features:**
 - Source audio preview player (always visible for A/B comparison)
@@ -114,7 +117,7 @@ source venv/bin/activate
 python scripts/run_pipeline.py
 ```
 
-This generates **18 audio files** in `output/` and prints detailed diagnostics explaining the quantitative "why" behind each stage.
+This generates **17 audio files** plus the sender key record metadata file in `output/`, and prints detailed diagnostics explaining the quantitative "why" behind each stage.
 
 ### Use Your Own Audio
 
@@ -235,7 +238,7 @@ No parameters — prints the complete mod-6 arithmetic table showing every possi
 
 The pipeline and individual modules print quantitative insights. Run any module with the `verbose=True` flag (enabled by default in CLI mode) to see these:
 
-- **Compression ratio**: The vocoder achieves 37:1 compression (22,050 values/sec → 600 values/sec)
+- **Compression ratio**: The vocoder achieves about **37:1 at 22.05 kHz** or **74:1 at 44.1 kHz** (for example, 44,100 samples/sec → 600 values/sec)
 - **Quantization distribution**: How the 6 levels (0–5) are distributed across band amplitudes, showing companding's effect
 - **Encryption uniformity**: Encrypted values should be uniformly distributed (chi-squared test). Correlation between original and encrypted should be ~0.0.
 - **Desync accuracy**: With perfect sync, 100% of values match. With ANY offset, accuracy drops to ~16.7% (= 1/6, random chance). This is the one-time pad's all-or-nothing property.
@@ -253,7 +256,7 @@ The pipeline and individual modules print quantitative insights. Run any module 
 | **Quantization / digitization** | Vocoder's 6-level companding in Stage 2 |
 | **Modular arithmetic** | Mod-6 encrypt/decrypt throughout |
 | **Spectral analysis attacks** | Automated cracker in Stage 1 / failed crack in Stage 4 |
-| **Compression as enabling technology** | Vocoder's 37:1 ratio makes encryption feasible |
+| **Compression as enabling technology** | Vocoder compression (for example, ~37:1 at 22.05 kHz) makes encryption feasible |
 
 ## How the Modules Work
 

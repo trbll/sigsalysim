@@ -164,6 +164,13 @@ header p {
     border-top-color: var(--text);
 }
 
+.tooltip .tooltip-text.tooltip-below::after {
+    top: auto;
+    bottom: 100%;
+    border-top-color: transparent;
+    border-bottom-color: var(--text);
+}
+
 .tooltip:hover .tooltip-text {
     visibility: visible;
     opacity: 1;
@@ -935,6 +942,13 @@ body[data-theme="codex"] .tooltip .tooltip-text::after {
     left: 1.2rem;
     border-width: 8px;
     border-top-color: #f5ecd6;
+}
+
+body[data-theme="codex"] .tooltip .tooltip-text.tooltip-below::after {
+    top: auto;
+    bottom: 100%;
+    border-top-color: transparent;
+    border-bottom-color: #f5ecd6;
 }
 
 body[data-theme="codex"] .source-preview,
